@@ -192,6 +192,7 @@ function settings(overrides: Partial<SettingsSnapshot> = {}): SettingsSnapshot {
     floatBarEnabled: true,
     floatBarOpacity: 80,
     floatBarScale: 100,
+    floatBarFontSize: 14,
     floatBarOrientation: "horizontal",
     floatBarStyle: "floating",
     floatBarClickThrough: false,
@@ -288,6 +289,20 @@ describe("FloatBar", () => {
     await waitFor(() => {
       const rows = container.querySelectorAll(".floatbar__quota-row");
       expect(Array.from(rows, row => row.textContent)).toEqual(["87%", "45%"]);
+    });
+  });
+
+  it("resizes taskbar text and its logo when the saved font size changes", async () => {
+    tauriMocks.getCachedProviders.mockResolvedValue([snapshot("codex", "Codex", 25)]);
+    tauriMocks.getSettingsSnapshot.mockResolvedValue(settings({ floatBarStyle: "taskbar", floatBarFontSize: 18 }));
+    const { container } = renderFloatBar(bootstrap({ floatBarStyle: "taskbar", floatBarFontSize: 14 }));
+    await waitFor(() => expect(eventMocks.listen.mock.calls.some(([name]) => name === "float-bar-config-changed")).toBe(true));
+    await act(async () => {
+      eventMocks.listen.mock.calls.find(([name]) => name === "float-bar-config-changed")![1]({ payload: null });
+    });
+    await waitFor(() => {
+      expect(container.querySelector<HTMLElement>(".floatbar")?.style.getPropertyValue("--floatbar-font-size")).toBe("18px");
+      expect(container.querySelector<HTMLElement>(".provider-icon")?.style.width).toBe("36px");
     });
   });
 

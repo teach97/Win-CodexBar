@@ -287,6 +287,8 @@ pub(super) struct RawSettings {
     float_bar_opacity: u8,
     #[serde(default = "default_float_bar_scale")]
     float_bar_scale: u8,
+    #[serde(default = "default_float_bar_font_size")]
+    float_bar_font_size: u8,
     #[serde(default = "default_float_bar_orientation")]
     float_bar_orientation: String,
     #[serde(default = "default_float_bar_style")]
@@ -434,6 +436,7 @@ impl Default for RawSettings {
             float_bar_enabled: s.float_bar_enabled,
             float_bar_opacity: s.float_bar_opacity,
             float_bar_scale: s.float_bar_scale,
+            float_bar_font_size: s.float_bar_font_size,
             float_bar_orientation: s.float_bar_orientation,
             float_bar_style: s.float_bar_style,
             float_bar_click_through: s.float_bar_click_through,
@@ -787,6 +790,7 @@ impl From<RawSettings> for Settings {
             float_bar_enabled: raw.float_bar_enabled,
             float_bar_opacity: clamp_float_bar_opacity(raw.float_bar_opacity),
             float_bar_scale: clamp_float_bar_scale(raw.float_bar_scale),
+            float_bar_font_size: clamp_float_bar_font_size(raw.float_bar_font_size),
             float_bar_orientation: normalize_float_bar_orientation(&raw.float_bar_orientation),
             float_bar_style: normalize_float_bar_style(&raw.float_bar_style),
             float_bar_click_through: raw.float_bar_click_through,

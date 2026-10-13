@@ -133,6 +133,7 @@ pub struct SettingsPatch {
     pub enabled: Option<bool>,
     pub opacity: Option<u8>,
     pub scale: Option<u8>,
+    pub font_size: Option<u8>,
     pub orientation: Option<String>,
     pub style: Option<String>,
     pub click_through: Option<bool>,
@@ -147,6 +148,7 @@ impl SettingsPatch {
         self.enabled.is_none()
             && self.opacity.is_none()
             && self.scale.is_none()
+            && self.font_size.is_none()
             && self.orientation.is_none()
             && self.style.is_none()
             && self.click_through.is_none()
@@ -167,6 +169,9 @@ impl SettingsPatch {
         }
         if let Some(v) = self.scale {
             settings.float_bar_scale = codexbar::settings::clamp_float_bar_scale(v);
+        }
+        if let Some(v) = self.font_size {
+            settings.float_bar_font_size = codexbar::settings::clamp_float_bar_font_size(v);
         }
         if let Some(v) = &self.orientation {
             settings.float_bar_orientation = codexbar::settings::normalize_float_bar_orientation(v);
@@ -239,6 +244,7 @@ mod tests {
             enabled: Some(true),
             opacity: Some(45),
             scale: Some(135),
+            font_size: Some(18),
             style: Some("taskbar".into()),
             dark_text: Some(true),
             show_reset_inline: Some(true),
@@ -248,6 +254,7 @@ mod tests {
         assert!(s.float_bar_enabled);
         assert_eq!(s.float_bar_opacity, 45);
         assert_eq!(s.float_bar_scale, 135);
+        assert_eq!(s.float_bar_font_size, 18);
         assert_eq!(s.float_bar_style, "taskbar");
         assert!(s.float_bar_dark_text);
         assert!(s.float_bar_show_reset_inline);
@@ -261,6 +268,7 @@ mod tests {
         let patch = SettingsPatch {
             opacity: Some(250),
             scale: Some(250),
+            font_size: Some(250),
             orientation: Some("diagonal".into()),
             style: Some("glass".into()),
             ..SettingsPatch::default()
@@ -268,6 +276,7 @@ mod tests {
         patch.apply(&mut s);
         assert_eq!(s.float_bar_opacity, 100);
         assert_eq!(s.float_bar_scale, 200);
+        assert_eq!(s.float_bar_font_size, 20);
         assert_eq!(s.float_bar_orientation, "horizontal");
         assert_eq!(s.float_bar_style, "floating");
     }
@@ -280,6 +289,7 @@ mod tests {
         assert_eq!(s.float_bar_enabled, original.float_bar_enabled);
         assert_eq!(s.float_bar_opacity, original.float_bar_opacity);
         assert_eq!(s.float_bar_scale, original.float_bar_scale);
+        assert_eq!(s.float_bar_font_size, original.float_bar_font_size);
         assert_eq!(s.float_bar_orientation, original.float_bar_orientation);
         assert_eq!(s.float_bar_style, original.float_bar_style);
         assert_eq!(s.float_bar_dark_text, original.float_bar_dark_text);

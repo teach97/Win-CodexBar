@@ -23,11 +23,15 @@ export default function FloatBarSettingsSection({ settings, saving, set }: Props
   const { t } = useLocale();
   const opacity = useDraftNumber(settings.floatBarOpacity);
   const scale = useDraftNumber(settings.floatBarScale);
+  const fontSize = useDraftNumber(settings.floatBarFontSize ?? 14);
   const commitOpacity = () => {
     opacity.commit(opacity.draft, (value) => set({ floatBarOpacity: value }));
   };
   const commitScale = () => {
     scale.commit(scale.draft, (value) => set({ floatBarScale: value }));
+  };
+  const commitFontSize = () => {
+    fontSize.commit(fontSize.draft, (value) => set({ floatBarFontSize: value }));
   };
 
   return (
@@ -90,6 +94,25 @@ export default function FloatBarSettingsSection({ settings, saving, set }: Props
             onBlur={commitOpacity}
             onKeyUp={commitOpacity}
             aria-label={t("FloatBarOpacityAriaLabel")}
+          />
+        </Field>
+        <Field
+          label={`${t("FloatBarFontSize")} (${fontSize.draft}px)`}
+          description={t("FloatBarFontSizeHelper")}
+        >
+          <input
+            type="range"
+            min={10}
+            max={20}
+            step={1}
+            value={fontSize.draft}
+            disabled={saving || !settings.floatBarEnabled || settings.floatBarStyle !== "taskbar"}
+            onChange={(e) => fontSize.setDraft(Number(e.target.value))}
+            onPointerUp={commitFontSize}
+            onTouchEnd={commitFontSize}
+            onBlur={commitFontSize}
+            onKeyUp={commitFontSize}
+            aria-label={t("FloatBarFontSize")}
           />
         </Field>
         <Field

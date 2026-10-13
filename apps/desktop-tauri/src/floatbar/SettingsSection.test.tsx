@@ -11,6 +11,7 @@ const settings = {
   floatBarEnabled: true,
   floatBarOpacity: 90,
   floatBarScale: 100,
+  floatBarFontSize: 14,
   floatBarOrientation: "horizontal",
   floatBarStyle: "floating",
   floatBarShowCost: false,
@@ -24,6 +25,21 @@ const settings = {
 } as unknown as SettingsSnapshot;
 
 describe("FloatBar settings", () => {
+  it("commits a taskbar font size independently of the overall scale", () => {
+    const set = vi.fn();
+    render(<FloatBarSettingsSection settings={{ ...settings, floatBarStyle: "taskbar" }} saving={false} set={set} />);
+    const slider = screen.getByRole("slider", { name: "FloatBarFontSize" });
+    fireEvent.change(slider, { target: { value: "18" } });
+    expect(set).not.toHaveBeenCalled();
+    fireEvent.pointerUp(slider);
+    expect(set).toHaveBeenCalledWith({ floatBarFontSize: 18 });
+  });
+
+  it("disables the taskbar font control for the floating style", () => {
+    render(<FloatBarSettingsSection settings={settings} saving={false} set={vi.fn()} />);
+    expect(screen.getByRole("slider", { name: "FloatBarFontSize" })).toBeDisabled();
+  });
+
   it("uses the existing toggle to turn the taskbar bar off", () => {
     const set = vi.fn();
     render(<FloatBarSettingsSection settings={{ ...settings, floatBarStyle: "taskbar" }} saving={false} set={set} />);

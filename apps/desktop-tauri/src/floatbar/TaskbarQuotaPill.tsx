@@ -9,10 +9,11 @@ interface Props {
   provider: ProviderUsageSnapshot;
   thresholds: QuotaWarningSettings;
   scale: number;
+  fontSize: number;
   style: CSSProperties;
 }
 
-export default function TaskbarQuotaPill({ provider, thresholds, scale, style }: Props) {
+export default function TaskbarQuotaPill({ provider, thresholds, scale, fontSize, style }: Props) {
   const { t } = useLocale();
   const state = describeProviderState(provider.errorState);
   const remainingLabel = t("FloatBarRemainingSuffix");
@@ -46,7 +47,7 @@ export default function TaskbarQuotaPill({ provider, thresholds, scale, style }:
       style={style}
     >
       <span className="floatbar__provider-icon" data-tauri-drag-region>
-        <ProviderIcon providerId={provider.providerId} size={Math.round(17 * scale)} />
+        <ProviderIcon providerId={provider.providerId} size={Math.round(fontSize * 2 * scale)} />
       </span>
       {state.isProblem ? (
         <span className="floatbar__pct" aria-label={t(state.labelKey)} data-tauri-drag-region>!</span>

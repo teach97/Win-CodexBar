@@ -93,6 +93,12 @@ In **Settings → Menu → Floating Bar**, enable **Show Floating Bar** and sele
 the **Taskbar widget** style. The same toggle hides the widget when disabled.
 The style is saved and restored after restarting the desktop app.
 
+The taskbar widget has no box background. **Taskbar font size** adjusts its
+bold quota text from 10 to 20 CSS pixels (14 by default); provider logos scale
+with the text. **Size** remains the overall scale control. Font changes apply
+live and persist after restart; the floating-glass style retains its existing
+text size.
+
 For Codex, Antigravity, and providers reporting five-hour or weekly quota windows,
 the widget displays the provider icon with five-hour remaining percent above
 weekly remaining percent. These rows always show remaining quota, regardless of

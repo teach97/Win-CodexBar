@@ -581,6 +581,30 @@ fn float_bar_defaults_are_safe() {
 }
 
 #[test]
+fn float_bar_font_size_round_trips_and_clamps_on_load() {
+    let mut json = serde_json::to_value(Settings::default()).expect("serialize");
+    json.as_object_mut()
+        .expect("settings object")
+        .remove("float_bar_font_size");
+    let legacy: Settings = serde_json::from_value(json.clone()).expect("legacy settings");
+    assert_eq!(
+        serde_json::to_value(legacy).expect("serialize")["float_bar_font_size"],
+        14
+    );
+    for (input, expected) in [(0, 10), (18, 18), (255, 20)] {
+        json["float_bar_font_size"] = serde_json::json!(input);
+        let settings: Settings = serde_json::from_value(json.clone()).expect("load font size");
+        let saved = serde_json::to_value(settings).expect("save font size");
+        assert_eq!(saved["float_bar_font_size"], expected);
+        let reloaded: Settings = serde_json::from_value(saved).expect("reload font size");
+        assert_eq!(
+            serde_json::to_value(reloaded).expect("serialize")["float_bar_font_size"],
+            expected
+        );
+    }
+}
+
+#[test]
 fn main_window_scale_defaults_to_100_percent() {
     let settings = Settings::default();
     assert_eq!(settings.window_scale_percent, 100);

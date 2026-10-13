@@ -412,6 +412,7 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
   const style = settings.floatBarStyle === "taskbar" ? "taskbar" : "floating";
   const filterIds = settings.floatBarProviderIds;
   const scale = Math.max(0.75, Math.min(2, settings.floatBarScale / 100));
+  const fontSize = Math.max(10, Math.min(20, settings.floatBarFontSize ?? 14));
   const showResetInline = settings.floatBarShowResetInline;
   const showCost = settings.floatBarShowCost;
   const visible = useMemo(() => {
@@ -527,6 +528,7 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
     orientation,
     style,
     scale,
+    fontSize,
     showResetInline,
     settings.resetTimeRelative,
   ]);
@@ -568,6 +570,7 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
         {
           opacity: opacityFraction,
           "--floatbar-scale": scale,
+          "--floatbar-font-size": `${fontSize}px`,
         } as CSSProperties
       }
     >
@@ -588,6 +591,7 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
                 provider={p}
                 thresholds={settings}
                 scale={scale}
+                fontSize={fontSize}
                 style={brandStyle(getProviderIcon(p.providerId).brandColor)}
               />
             ) : (
