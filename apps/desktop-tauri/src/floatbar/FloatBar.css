@@ -104,6 +104,25 @@ body.floatbar-window #root {
   pointer-events: none;
 }
 
+.floatbar__pill--stacked {
+  gap: calc(5px * var(--floatbar-scale, 1));
+  padding: calc(3px * var(--floatbar-scale, 1)) calc(6px * var(--floatbar-scale, 1));
+}
+.floatbar__quota-values {
+  display: inline-flex;
+  flex-direction: column;
+  gap: calc(2px * var(--floatbar-scale, 1));
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+.floatbar__quota-row--warn {
+  color: #92400e;
+}
+.floatbar__quota-row--crit {
+  color: #991b1b;
+}
+
+
 .floatbar__cost-estimate {
   color: rgba(24, 42, 54, 0.72);
   font-size: calc(8px * var(--floatbar-scale, 1));

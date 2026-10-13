@@ -251,9 +251,89 @@ describe("FloatBar", () => {
         CostPeriodShortDays: "{}d",
         FloatBarNoProviders: "No providers",
         FloatBarRemainingSuffix: "remaining",
+        PanelFiveHours: "5h",
+        ProviderWeekly: "Weekly",
       }),
     );
     eventMocks.listen.mockResolvedValue(() => {});
+  });
+
+  it("shows Codex 5-hour and weekly remaining quotas in taskbar style despite the selected metric", async () => {
+    const provider = snapshot("codex", "Codex", 25, {
+      secondary: { used: 40 },
+      selected: { used: 40 },
+    });
+    provider.primary.windowMinutes = 300;
+    provider.secondary!.windowMinutes = 7 * 24 * 60;
+    tauriMocks.getCachedProviders.mockResolvedValue([provider]);
+
+    const { container } = renderFloatBar(bootstrap({ floatBarStyle: "taskbar", showAsUsed: true }));
+    await waitFor(() => {
+      const pill = container.querySelector(".floatbar__pill");
+      expect(pill?.querySelector('[aria-label="5h remaining"]')?.textContent).toBe("75%");
+      expect(pill?.querySelector('[aria-label="Weekly remaining"]')?.textContent).toBe("60%");
+      expect(pill?.querySelectorAll(".floatbar__provider-icon")).toHaveLength(1);
+    });
+  });
+
+  it("shows Antigravity quotas in the same 5-hour then weekly order", async () => {
+    const provider = snapshot("antigravity", "Antigravity", 13, { secondary: { used: 55 } });
+    provider.primary.windowMinutes = 300;
+    provider.secondary!.windowMinutes = 7 * 24 * 60;
+    tauriMocks.getCachedProviders.mockResolvedValue([provider]);
+
+    const { container } = renderFloatBar(bootstrap({
+      floatBarStyle: "taskbar", enabledProviders: ["antigravity"],
+    }));
+    await waitFor(() => {
+      const rows = container.querySelectorAll(".floatbar__quota-row");
+      expect(Array.from(rows, row => row.textContent)).toEqual(["87%", "45%"]);
+    });
+  });
+
+  it("keeps unavailable taskbar quotas as dashes instead of inventing 100% remaining", async () => {
+    const provider = snapshot("codex", "Codex", 0, {
+      informational: true, secondary: { used: 20 },
+    });
+    provider.primary.windowMinutes = 300;
+    provider.secondary!.windowMinutes = 7 * 24 * 60;
+    tauriMocks.getCachedProviders.mockResolvedValue([provider]);
+
+    const { container } = renderFloatBar(bootstrap({ floatBarStyle: "taskbar" }));
+    await waitFor(() => {
+      expect(container.querySelector('[aria-label="5h remaining"]')?.textContent).toBe("—");
+      expect(container.querySelector('[aria-label="Weekly remaining"]')?.textContent).toBe("80%");
+    });
+  });
+
+  it("does not relabel a nonweekly secondary quota as a weekly taskbar quota", async () => {
+    const provider = snapshot("antigravity", "Antigravity", 20, { secondary: { used: 80 } });
+    provider.primary.windowMinutes = 300;
+    provider.secondary!.windowMinutes = 300;
+    tauriMocks.getCachedProviders.mockResolvedValue([provider]);
+
+    const { container } = renderFloatBar(bootstrap({
+      floatBarStyle: "taskbar", enabledProviders: ["antigravity"],
+    }));
+    await waitFor(() => {
+      expect(container.querySelector('[aria-label="5h remaining"]')?.textContent).toBe("80%");
+      expect(container.querySelector('[aria-label="Weekly remaining"]')?.textContent).toBe("—");
+    });
+  });
+
+  it("hides quota percentages when taskbar provider data requires sign-in", async () => {
+    const provider = snapshot("codex", "Codex", 20, {
+      secondary: { used: 40 }, errorState: "needsAuthentication",
+    });
+    provider.primary.windowMinutes = 300;
+    provider.secondary!.windowMinutes = 7 * 24 * 60;
+    tauriMocks.getCachedProviders.mockResolvedValue([provider]);
+
+    const { container } = renderFloatBar(bootstrap({ floatBarStyle: "taskbar" }));
+    await waitFor(() => {
+      expect(container.querySelector(".floatbar__pill")?.getAttribute("title")).toBe("Codex: Sign-in required");
+      expect(container.querySelector(".floatbar__pill")?.querySelectorAll(".floatbar__quota-row")).toHaveLength(0);
+    });
   });
 
   it("renders a pill per enabled provider, sorted by usage descending", async () => {
