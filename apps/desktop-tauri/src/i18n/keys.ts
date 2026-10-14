@@ -1025,6 +1025,8 @@ export const ALL_LOCALE_KEYS = [
   "FloatBarSize",
   "FloatBarSizeHelper",
   "FloatBarSizeAriaLabel",
+  "FloatBarFontSize",
+  "FloatBarFontSizeHelper",
   "FloatBarShowResetInline",
   "FloatBarShowResetInlineHelper",
   "FloatBarInvertColors",

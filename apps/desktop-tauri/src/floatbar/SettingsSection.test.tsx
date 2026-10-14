@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { SettingsSnapshot } from "../types/bridge";
 import FloatBarSettingsSection from "./SettingsSection";
@@ -11,6 +11,7 @@ const settings = {
   floatBarEnabled: true,
   floatBarOpacity: 90,
   floatBarScale: 100,
+  floatBarFontSize: 14,
   floatBarOrientation: "horizontal",
   floatBarStyle: "floating",
   floatBarShowCost: false,
@@ -24,6 +25,33 @@ const settings = {
 } as unknown as SettingsSnapshot;
 
 describe("FloatBar settings", () => {
+  it("commits a taskbar font size independently of the overall scale", () => {
+    const set = vi.fn();
+    render(<FloatBarSettingsSection settings={{ ...settings, floatBarStyle: "taskbar" }} saving={false} set={set} />);
+    const slider = screen.getByRole("slider", { name: "FloatBarFontSize" });
+    fireEvent.change(slider, { target: { value: "18" } });
+    expect(set).not.toHaveBeenCalled();
+    fireEvent.pointerUp(slider);
+    expect(set).toHaveBeenCalledWith({ floatBarFontSize: 18 });
+  });
+
+  it("disables the taskbar font control for the floating style", () => {
+    render(<FloatBarSettingsSection settings={settings} saving={false} set={vi.fn()} />);
+    expect(screen.getByRole("slider", { name: "FloatBarFontSize" })).toBeDisabled();
+  });
+
+  it("uses the existing toggle to turn the taskbar bar off", () => {
+    const set = vi.fn();
+    render(<FloatBarSettingsSection settings={{ ...settings, floatBarStyle: "taskbar" }} saving={false} set={set} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "FloatBarShowFloatingBar" }));
+    expect(set).toHaveBeenCalledWith({ floatBarEnabled: false });
+  });
+
+  it("disables the style selector while the bar is off", () => {
+    render(<FloatBarSettingsSection settings={{ ...settings, floatBarEnabled: false }} saving={false} set={vi.fn()} />);
+    expect(screen.getByRole("combobox", { name: "FloatBarStyle" })).toBeDisabled();
+  });
+
   it("renders one cost toggle", () => {
     render(
       <FloatBarSettingsSection settings={settings} saving={false} set={vi.fn()} />,

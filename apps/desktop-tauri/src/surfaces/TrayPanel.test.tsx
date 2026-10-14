@@ -191,6 +191,7 @@ function settings(overrides: Partial<SettingsSnapshot> = {}): SettingsSnapshot {
     floatBarEnabled: false,
     floatBarOpacity: 80,
     floatBarScale: 100,
+    floatBarFontSize: 14,
     floatBarOrientation: "horizontal",
     floatBarStyle: "floating",
     floatBarClickThrough: false,

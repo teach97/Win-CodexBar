@@ -383,6 +383,10 @@ pub struct Settings {
     #[serde(default = "default_float_bar_scale")]
     pub float_bar_scale: u8,
 
+    /// Taskbar font size in CSS pixels, in the inclusive range 10..=20.
+    #[serde(default = "default_float_bar_font_size")]
+    pub float_bar_font_size: u8,
+
     /// Floating-bar orientation: "horizontal" (default) or "vertical".
     #[serde(default = "default_float_bar_orientation")]
     pub float_bar_orientation: String,
@@ -528,6 +532,10 @@ fn default_float_bar_scale() -> u8 {
     100
 }
 
+fn default_float_bar_font_size() -> u8 {
+    14
+}
+
 fn default_float_bar_orientation() -> String {
     "horizontal".to_string()
 }
@@ -547,6 +555,10 @@ pub fn clamp_float_bar_opacity(value: u8) -> u8 {
 /// Clamp the floating-bar visual scale to the supported range.
 pub fn clamp_float_bar_scale(value: u8) -> u8 {
     value.clamp(75, 200)
+}
+
+pub fn clamp_float_bar_font_size(value: u8) -> u8 {
+    value.clamp(10, 20)
 }
 
 /// Normalize a floating-bar orientation string. Unknown values fall back to
@@ -725,6 +737,7 @@ impl Default for Settings {
             float_bar_enabled: false,
             float_bar_opacity: default_float_bar_opacity(),
             float_bar_scale: default_float_bar_scale(),
+            float_bar_font_size: default_float_bar_font_size(),
             float_bar_orientation: default_float_bar_orientation(),
             float_bar_style: default_float_bar_style(),
             float_bar_click_through: false,

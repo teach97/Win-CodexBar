@@ -87,6 +87,25 @@ $env:CODEXBAR_PROOF_MODE = "settings:menu"
 # then launch the desktop binary
 ```
 
+## Float bar taskbar widget
+
+In **Settings → Menu → Floating Bar**, enable **Show Floating Bar** and select
+the **Taskbar widget** style. The same toggle hides the widget when disabled.
+The style is saved and restored after restarting the desktop app.
+
+The taskbar widget has no box background. **Taskbar font size** adjusts its
+bold quota text from 10 to 20 CSS pixels (14 by default); provider logos scale
+with the text. **Size** remains the overall scale control. Font changes apply
+live and persist after restart; the floating-glass style retains its existing
+text size.
+
+For Codex, Antigravity, and providers reporting five-hour or weekly quota windows,
+the widget displays the provider icon with five-hour remaining percent above
+weekly remaining percent. These rows always show remaining quota, regardless of
+the selected tray metric or the global used/remaining preference. Hover for
+period labels. A missing or informational quota is shown as `—`; an unavailable
+provider shows `!` with its status in the tooltip.
+
 ## Provider switcher keys
 
 The tray flyout switches providers from the keyboard (ported from upstream 0.67.0; the shortcuts are menu-local, not global hotkeys):

@@ -34,6 +34,7 @@ import type {
   SettingsSnapshot,
 } from "../types/bridge";
 import { FLOAT_BAR_CONFIG_CHANGED_EVENT, resizeFloatBar } from "./api";
+import TaskbarQuotaPill from "./TaskbarQuotaPill";
 import "./FloatBar.css";
 
 function sameWindow(a: RateWindowSnapshot, b: RateWindowSnapshot): boolean {
@@ -411,6 +412,7 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
   const style = settings.floatBarStyle === "taskbar" ? "taskbar" : "floating";
   const filterIds = settings.floatBarProviderIds;
   const scale = Math.max(0.75, Math.min(2, settings.floatBarScale / 100));
+  const fontSize = Math.max(10, Math.min(20, settings.floatBarFontSize ?? 14));
   const showResetInline = settings.floatBarShowResetInline;
   const showCost = settings.floatBarShowCost;
   const visible = useMemo(() => {
@@ -526,6 +528,7 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
     orientation,
     style,
     scale,
+    fontSize,
     showResetInline,
     settings.resetTimeRelative,
   ]);
@@ -567,6 +570,7 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
         {
           opacity: opacityFraction,
           "--floatbar-scale": scale,
+          "--floatbar-font-size": `${fontSize}px`,
         } as CSSProperties
       }
     >
@@ -578,18 +582,32 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
       ) : (
         <>
           {visible.map((p) => (
-            <ProviderPill
-              key={providerCostKey(p)}
-              provider={p}
-              thresholds={settings}
-              showAsUsed={settings.showAsUsed}
-              scale={scale}
-              showResetInline={showResetInline}
-              resetRelative={settings.resetTimeRelative}
-              usedSuffix={t("PanelUsedSuffix")}
-              remainingSuffix={t("FloatBarRemainingSuffix")}
-              stateLabel={t(describeProviderState(p.errorState).labelKey)}
-            />
+            style === "taskbar" && (
+              p.providerId === "codex" || p.providerId === "antigravity" ||
+              [p.primary, p.secondary].some(window => window?.windowMinutes === 300 || window?.windowMinutes === 7 * 24 * 60)
+            ) ? (
+              <TaskbarQuotaPill
+                key={providerCostKey(p)}
+                provider={p}
+                thresholds={settings}
+                scale={scale}
+                fontSize={fontSize}
+                style={brandStyle(getProviderIcon(p.providerId).brandColor)}
+              />
+            ) : (
+              <ProviderPill
+                key={providerCostKey(p)}
+                provider={p}
+                thresholds={settings}
+                showAsUsed={settings.showAsUsed}
+                scale={scale}
+                showResetInline={showResetInline}
+                resetRelative={settings.resetTimeRelative}
+                usedSuffix={t("PanelUsedSuffix")}
+                remainingSuffix={t("FloatBarRemainingSuffix")}
+                stateLabel={t(describeProviderState(p.errorState).labelKey)}
+              />
+            )
           ))}
           {visibleCosts.map((summary) => (
             <CostPill

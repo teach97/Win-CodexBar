@@ -104,6 +104,18 @@ body.floatbar-window #root {
   pointer-events: none;
 }
 
+.floatbar__pill--stacked {
+  gap: calc(5px * var(--floatbar-scale, 1));
+  padding: calc(3px * var(--floatbar-scale, 1)) calc(6px * var(--floatbar-scale, 1));
+}
+.floatbar__quota-values {
+  display: inline-flex;
+  flex-direction: column;
+  gap: calc(2px * var(--floatbar-scale, 1));
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
 .floatbar__cost-estimate {
   color: rgba(24, 42, 54, 0.72);
   font-size: calc(8px * var(--floatbar-scale, 1));
@@ -353,4 +365,37 @@ body.floatbar-window #root {
 }
 .floatbar--floating.floatbar--light-bg .floatbar__handle:hover {
   background-color: rgba(20, 22, 26, 0.18);
+}
+
+.floatbar--taskbar {
+  gap: calc(12px * var(--floatbar-scale, 1));
+  color: #f8fafc;
+  font-size: calc(var(--floatbar-font-size, 14px) * var(--floatbar-scale, 1));
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+.floatbar--taskbar .floatbar__pill,
+.floatbar--taskbar .floatbar__cost-pill,
+.floatbar--taskbar .floatbar__empty {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  color: inherit;
+}
+.floatbar--taskbar .floatbar__quota-row--warn {
+  color: #fbbf24;
+}
+.floatbar--taskbar .floatbar__quota-row--crit {
+  color: #f87171;
+}
+.floatbar--taskbar .floatbar__provider-icon .provider-icon {
+  color: var(--provider-brand-dark, var(--provider-brand, var(--accent)));
+}
+.floatbar--taskbar.floatbar--light-bg {
+  color: #14161a;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
