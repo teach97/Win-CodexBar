@@ -241,10 +241,14 @@ pub fn show(
     style: &str,
     click_through: bool,
 ) -> Result<(), String> {
+    let settings = codexbar::settings::Settings::load();
     if let Some(window) = app.get_webview_window(FLOATBAR_LABEL) {
+        super::taskbar::apply(&window, &settings)?;
         apply_opacity(&window, opacity);
         apply_click_through(&window, click_through);
-        let _ = ensure_visible_on_active_monitor(&window, style);
+        if !super::taskbar::is_docked() {
+            let _ = ensure_visible_on_active_monitor(&window, style);
+        }
         // Re-assert after possible unminimize/relocate so focus stays off.
         apply_no_activate(&window);
         apply_always_on_top(&window);
@@ -264,7 +268,7 @@ pub fn show(
         .decorations(false)
         .shadow(false)
         .resizable(false)
-        .always_on_top(true)
+        .always_on_top(!(settings.float_bar_taskbar_docked && style == "taskbar"))
         .skip_taskbar(true)
         // Show with SW_SHOWNOACTIVATE: a plain first show activates the bar
         // and takes focus from the app the user is typing in.
@@ -320,6 +324,7 @@ pub fn show(
     apply_opacity(&win, opacity);
     apply_click_through(&win, click_through);
     apply_no_activate(&win);
+    super::taskbar::apply(&win, &settings)?;
     apply_always_on_top(&win);
     win.show().map_err(|e| e.to_string())?;
     apply_always_on_top(&win);
@@ -333,6 +338,7 @@ pub fn hide(app: &tauri::AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(FLOATBAR_LABEL) {
         // Persist position before closing so it reopens in place.
         remember_user_geometry(&window);
+        super::taskbar::stop();
         placement::with_tracker(placement::PlacementTracker::reset);
         if let Err(error) = window.close() {
             super::topmost_guard::set_active(true);
@@ -404,6 +410,9 @@ pub(super) fn track_move<R: tauri::Runtime, M: WindowGeometry<R>>(window: &M) {
 /// Persist the current geometry unless the bar sits where Windows moved it
 /// rather than where the user placed it.
 pub(super) fn remember_user_geometry<R: tauri::Runtime, M: WindowGeometry<R>>(window: &M) {
+    if super::taskbar::is_docked() {
+        return;
+    }
     let Ok(position) = window.outer_position() else {
         return;
     };
@@ -545,6 +554,10 @@ pub fn resize(
         .map_err(|e| e.to_string())?;
     apply_no_activate(window);
     apply_click_through(window, click_through);
+    if super::taskbar::is_docked() {
+        super::taskbar::refresh(window)?;
+        return Ok(());
+    }
     apply_always_on_top(window);
     Ok(())
 }
@@ -556,6 +569,9 @@ pub fn resize(
 /// This Win32 pass keeps the floatbar visually above normal app windows while
 /// preserving the current foreground app's input focus.
 pub fn apply_always_on_top(window: &tauri::WebviewWindow) {
+    if super::taskbar::is_docked() {
+        return;
+    }
     let _ = window;
     #[cfg(windows)]
     {

@@ -1041,6 +1041,9 @@ pub struct SettingsSnapshot {
     float_bar_scale: u8,
     float_bar_font_size: u8,
     float_bar_color_gradient: bool,
+    float_bar_taskbar_docked: bool,
+    float_bar_taskbar_monitor: String,
+    float_bar_taskbar_position: u8,
     float_bar_orientation: String,
     float_bar_style: String,
     float_bar_click_through: bool,
@@ -1210,6 +1213,9 @@ impl From<Settings> for SettingsSnapshot {
             float_bar_scale: settings.float_bar_scale,
             float_bar_font_size: settings.float_bar_font_size,
             float_bar_color_gradient: settings.float_bar_color_gradient,
+            float_bar_taskbar_docked: settings.float_bar_taskbar_docked,
+            float_bar_taskbar_monitor: settings.float_bar_taskbar_monitor,
+            float_bar_taskbar_position: settings.float_bar_taskbar_position,
             float_bar_orientation: settings.float_bar_orientation,
             float_bar_style: settings.float_bar_style,
             float_bar_click_through: settings.float_bar_click_through,
@@ -1352,6 +1358,21 @@ pub(super) fn parse_metric_preference(s: &str) -> Option<MetricPreference> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn taskbar_placement_snapshot_uses_the_camel_case_contract() {
+        let settings = Settings {
+            float_bar_taskbar_docked: true,
+            float_bar_taskbar_monitor: r"\\.\DISPLAY2".to_string(),
+            float_bar_taskbar_position: 72,
+            ..Settings::default()
+        };
+        let json = serde_json::to_value(SettingsSnapshot::from(settings))
+            .expect("serialize docking snapshot");
+        assert_eq!(json["floatBarTaskbarDocked"], true);
+        assert_eq!(json["floatBarTaskbarMonitor"], r"\\.\DISPLAY2");
+        assert_eq!(json["floatBarTaskbarPosition"], 72);
+    }
 
     fn snapshot_window_with(
         used_percent: f64,

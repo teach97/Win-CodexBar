@@ -392,6 +392,17 @@ body.floatbar-window #root {
 .floatbar--taskbar .floatbar__provider-icon .provider-icon {
   color: var(--provider-brand-dark, var(--provider-brand, var(--accent)));
 }
+.floatbar--docked {
+  cursor: default;
+  font-size: min(calc(var(--floatbar-font-size, 14px) * var(--floatbar-scale, 1)), calc((100vh - 8px * var(--floatbar-scale, 1) - 8px) / 2));
+}
+.floatbar--docked .floatbar__pill {
+  cursor: default;
+}
+.floatbar--docked .provider-icon {
+  max-width: calc(100vh - 6px * var(--floatbar-scale, 1) - 8px);
+  max-height: calc(100vh - 6px * var(--floatbar-scale, 1) - 8px);
+}
 .floatbar--taskbar.floatbar--light-bg {
   color: #14161a;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);

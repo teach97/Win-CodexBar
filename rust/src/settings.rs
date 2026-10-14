@@ -391,6 +391,18 @@ pub struct Settings {
     #[serde(default = "default_true")]
     pub float_bar_color_gradient: bool,
 
+    /// Embed the taskbar-style bar inside the Windows taskbar.
+    #[serde(default)]
+    pub float_bar_taskbar_docked: bool,
+
+    /// Display device ID for docking. Empty follows the primary monitor.
+    #[serde(default)]
+    pub float_bar_taskbar_monitor: String,
+
+    /// Position along the available taskbar span, in the range 0..=100.
+    #[serde(default = "default_float_bar_taskbar_position")]
+    pub float_bar_taskbar_position: u8,
+
     /// Floating-bar orientation: "horizontal" (default) or "vertical".
     #[serde(default = "default_float_bar_orientation")]
     pub float_bar_orientation: String,
@@ -538,6 +550,10 @@ fn default_float_bar_scale() -> u8 {
 
 fn default_float_bar_font_size() -> u8 {
     14
+}
+
+fn default_float_bar_taskbar_position() -> u8 {
+    10
 }
 
 fn default_float_bar_orientation() -> String {
@@ -743,6 +759,9 @@ impl Default for Settings {
             float_bar_scale: default_float_bar_scale(),
             float_bar_font_size: default_float_bar_font_size(),
             float_bar_color_gradient: true,
+            float_bar_taskbar_docked: false,
+            float_bar_taskbar_monitor: String::new(),
+            float_bar_taskbar_position: default_float_bar_taskbar_position(),
             float_bar_orientation: default_float_bar_orientation(),
             float_bar_style: default_float_bar_style(),
             float_bar_click_through: false,

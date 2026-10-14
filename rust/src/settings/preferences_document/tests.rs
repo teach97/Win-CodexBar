@@ -70,6 +70,8 @@ fn customized_settings() -> Settings {
         float_bar_scale: 120,
         float_bar_font_size: 18,
         float_bar_color_gradient: false,
+        float_bar_taskbar_docked: true,
+        float_bar_taskbar_position: 72,
         float_bar_orientation: "vertical".to_string(),
         float_bar_style: "taskbar".to_string(),
         float_bar_dark_text: true,
@@ -112,6 +114,7 @@ fn secret_settings() -> Settings {
     settings.http_proxy_password = "SECRET-PROXY-PASSWORD".to_string();
     settings.codex_custom_sessions_dirs = vec!["C:\\secret\\sessions".to_string()];
     settings.agent_session_ssh_hosts = vec!["secret-host.invalid".to_string()];
+    settings.float_bar_taskbar_monitor = r"\\.\DISPLAY2".to_string();
     settings.notification_sound_paths.high_usage = Some("C:\\secret\\ding.wav".to_string());
     settings.cost_usage_bucket_time_zone = "Asia/Tokyo".to_string();
     settings.stay_awake_enabled = true;
@@ -137,6 +140,7 @@ fn round_trips_every_allowlisted_preference() {
     let mut target = Settings {
         start_at_login: true,
         global_shortcut: "Ctrl+Alt+K".to_string(),
+        float_bar_taskbar_monitor: r"\\.\DISPLAY1".to_string(),
         ..Settings::default()
     };
     let applied = reparsed.apply_to(&mut target).expect("apply");
@@ -150,6 +154,9 @@ fn round_trips_every_allowlisted_preference() {
     assert_eq!(target.window_scale_percent, 150);
     assert_eq!(target.float_bar_font_size, 18);
     assert!(!target.float_bar_color_gradient);
+    assert!(target.float_bar_taskbar_docked);
+    assert_eq!(target.float_bar_taskbar_position, 72);
+    assert_eq!(target.float_bar_taskbar_monitor, r"\\.\DISPLAY1");
     assert_eq!(target.ui_language, Language::Japanese);
     assert!(!target.status_checks_enabled);
     assert!(again.to_json().contains("\"status_checks_enabled\": false"));
@@ -196,6 +203,13 @@ fn export_is_deterministic_and_sorted() {
     let codex = first.find("\"codex\"").expect("codex listed");
     let zai = first.find("\"zai\"").expect("zai listed");
     assert!(claude < codex && codex < zai);
+}
+
+#[test]
+fn taskbar_position_import_rejects_out_of_range_values() {
+    assert!(parse(json!({ "float_bar_taskbar_position": 101 })).is_err());
+    assert!(parse(json!({ "float_bar_taskbar_position": -1 })).is_err());
+    assert!(parse(json!({ "float_bar_taskbar_position": 100 })).is_ok());
 }
 
 #[test]

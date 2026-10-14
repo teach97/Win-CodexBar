@@ -620,6 +620,28 @@ fn float_bar_color_gradient_defaults_on_and_preserves_disabled_state() {
 }
 
 #[test]
+fn float_bar_taskbar_docking_defaults_and_saved_placement_round_trip() {
+    let legacy: Settings =
+        serde_json::from_str(r#"{"enabled_providers": []}"#).expect("load legacy settings");
+    assert!(!legacy.float_bar_taskbar_docked);
+    assert!(legacy.float_bar_taskbar_monitor.is_empty());
+    assert_eq!(legacy.float_bar_taskbar_position, 10);
+    for (input, expected) in [(0, 0), (72, 72), (255, 100)] {
+        let mut json = serde_json::to_value(Settings::default()).expect("serialize defaults");
+        json["float_bar_taskbar_docked"] = serde_json::json!(true);
+        json["float_bar_taskbar_monitor"] = serde_json::json!(r"\\.\DISPLAY2");
+        json["float_bar_taskbar_position"] = serde_json::json!(input);
+        let saved: Settings = serde_json::from_value(json).expect("load docking settings");
+        let reloaded: Settings =
+            serde_json::from_str(&serde_json::to_string(&saved).expect("save docking settings"))
+                .expect("reload docking settings");
+        assert!(reloaded.float_bar_taskbar_docked);
+        assert_eq!(reloaded.float_bar_taskbar_monitor, r"\\.\DISPLAY2");
+        assert_eq!(reloaded.float_bar_taskbar_position, expected);
+    }
+}
+
+#[test]
 fn main_window_scale_defaults_to_100_percent() {
     let settings = Settings::default();
     assert_eq!(settings.window_scale_percent, 100);

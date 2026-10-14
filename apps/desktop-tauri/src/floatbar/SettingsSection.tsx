@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Field, Select, Toggle } from "../components/FormControls";
 import { useDraftNumber } from "../hooks/useDraftNumber";
 import { useLocale } from "../hooks/useLocale";
@@ -7,6 +8,7 @@ import type {
   SettingsSnapshot,
   SettingsUpdate,
 } from "../types/bridge";
+import { getFloatBarTaskbars, type FloatBarTaskbar } from "./api";
 
 interface Props {
   settings: SettingsSnapshot;
@@ -24,6 +26,28 @@ export default function FloatBarSettingsSection({ settings, saving, set }: Props
   const opacity = useDraftNumber(settings.floatBarOpacity);
   const scale = useDraftNumber(settings.floatBarScale);
   const fontSize = useDraftNumber(settings.floatBarFontSize ?? 14);
+  const taskbarPosition = useDraftNumber(settings.floatBarTaskbarPosition ?? 10);
+  const docked = settings.floatBarStyle === "taskbar" && settings.floatBarTaskbarDocked;
+  const [taskbars, setTaskbars] = useState<FloatBarTaskbar[]>([]);
+  useEffect(() => {
+    if (!settings.floatBarEnabled || settings.floatBarStyle !== "taskbar") return;
+    let cancelled = false;
+    void getFloatBarTaskbars().then((available) => {
+      if (!cancelled) setTaskbars(available);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [settings.floatBarEnabled, settings.floatBarStyle, settings.floatBarTaskbarDocked]);
+  const monitor = settings.floatBarTaskbarMonitor ?? "";
+  const monitorOptions = [
+    { value: "", label: t("FloatBarTaskbarPrimaryMonitor") },
+    ...taskbars.map((taskbar) => ({
+      value: taskbar.id,
+      label: `${taskbar.name} (${taskbar.width} × ${taskbar.height})`,
+    })),
+    ...(monitor && !taskbars.some((taskbar) => taskbar.id === monitor)
+      ? [{ value: monitor, label: `${t("FloatBarTaskbarMonitorUnavailable")} (${monitor})` }]
+      : []),
+  ];
   const commitOpacity = () => {
     opacity.commit(opacity.draft, (value) => set({ floatBarOpacity: value }));
   };
@@ -32,6 +56,9 @@ export default function FloatBarSettingsSection({ settings, saving, set }: Props
   };
   const commitFontSize = () => {
     fontSize.commit(fontSize.draft, (value) => set({ floatBarFontSize: value }));
+  };
+  const commitTaskbarPosition = () => {
+    taskbarPosition.commit(taskbarPosition.draft, (value) => set({ floatBarTaskbarPosition: value }));
   };
 
   return (
@@ -54,8 +81,8 @@ export default function FloatBarSettingsSection({ settings, saving, set }: Props
           description={t("FloatBarOrientationHelper")}
         >
           <Select
-            value={settings.floatBarOrientation}
-            disabled={saving || !settings.floatBarEnabled}
+            value={docked ? "horizontal" : settings.floatBarOrientation}
+            disabled={saving || !settings.floatBarEnabled || docked}
             options={[
               { value: "horizontal", label: t("FloatBarOrientationHorizontal") },
               { value: "vertical", label: t("FloatBarOrientationVertical") },
@@ -77,6 +104,51 @@ export default function FloatBarSettingsSection({ settings, saving, set }: Props
             onChange={(v) => set({ floatBarStyle: v as FloatBarStyle })}
           />
         </Field>
+        {settings.floatBarStyle === "taskbar" && (
+          <>
+            <Field
+              label={t("FloatBarTaskbarDocked")}
+              description={t("FloatBarTaskbarDockedHelper")}
+              leading
+            >
+              <Toggle
+                checked={settings.floatBarTaskbarDocked ?? false}
+                disabled={saving || !settings.floatBarEnabled}
+                onChange={(v) => set({ floatBarTaskbarDocked: v })}
+              />
+            </Field>
+            <Field
+              label={t("FloatBarTaskbarMonitor")}
+              description={t("FloatBarTaskbarMonitorHelper")}
+            >
+              <Select
+                value={monitor}
+                disabled={saving || !settings.floatBarEnabled || !docked}
+                options={monitorOptions}
+                onChange={(v) => set({ floatBarTaskbarMonitor: v })}
+              />
+            </Field>
+            <Field
+              label={`${t("FloatBarTaskbarPosition")} (${taskbarPosition.draft}%)`}
+              description={t("FloatBarTaskbarPositionHelper")}
+            >
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={taskbarPosition.draft}
+                disabled={saving || !settings.floatBarEnabled || !docked}
+                onChange={(e) => taskbarPosition.setDraft(Number(e.target.value))}
+                onPointerUp={commitTaskbarPosition}
+                onTouchEnd={commitTaskbarPosition}
+                onBlur={commitTaskbarPosition}
+                onKeyUp={commitTaskbarPosition}
+                aria-label={t("FloatBarTaskbarPosition")}
+              />
+            </Field>
+          </>
+        )}
         <Field
           label={`${t("FloatBarOpacity")} (${opacity.draft}%)`}
           description={t("FloatBarOpacityHelper")}

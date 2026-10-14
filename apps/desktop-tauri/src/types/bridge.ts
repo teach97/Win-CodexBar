@@ -309,6 +309,11 @@ export interface SettingsSnapshot {
   /** Taskbar font size in CSS pixels, 10..=20. */
   floatBarFontSize: number;
   floatBarColorGradient: boolean;
+  floatBarTaskbarDocked: boolean;
+  /** Empty follows the primary monitor; otherwise a Windows display device ID. */
+  floatBarTaskbarMonitor: string;
+  /** 0..=100 along the available taskbar span. */
+  floatBarTaskbarPosition: number;
   floatBarOrientation: FloatBarOrientation;
   floatBarStyle: FloatBarStyle;
   floatBarClickThrough: boolean;
@@ -458,6 +463,9 @@ export interface SettingsUpdate {
   floatBarScale?: number;
   floatBarFontSize?: number;
   floatBarColorGradient?: boolean;
+  floatBarTaskbarDocked?: boolean;
+  floatBarTaskbarMonitor?: string;
+  floatBarTaskbarPosition?: number;
   floatBarOrientation?: FloatBarOrientation;
   floatBarStyle?: FloatBarStyle;
   floatBarClickThrough?: boolean;

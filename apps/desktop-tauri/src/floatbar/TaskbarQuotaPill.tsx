@@ -9,10 +9,11 @@ interface Props {
   scale: number;
   fontSize: number;
   colorGradient: boolean;
+  canDrag?: boolean;
   style: CSSProperties;
 }
 
-export default function TaskbarQuotaPill({ provider, scale, fontSize, colorGradient, style }: Props) {
+export default function TaskbarQuotaPill({ provider, scale, fontSize, colorGradient, canDrag = true, style }: Props) {
   const { t } = useLocale();
   const state = describeProviderState(provider.errorState);
   const remainingLabel = t("FloatBarRemainingSuffix");
@@ -37,23 +38,23 @@ export default function TaskbarQuotaPill({ provider, scale, fontSize, colorGradi
       title={state.isProblem
         ? `${provider.displayName}: ${t(state.labelKey)}`
         : `${provider.displayName}\n${rows.map(row => `${row.label}: ${row.value} ${remainingLabel}`).join("\n")}`}
-      data-tauri-drag-region
+      data-tauri-drag-region={canDrag || undefined}
       style={style}
     >
-      <span className="floatbar__provider-icon" data-tauri-drag-region>
+      <span className="floatbar__provider-icon" data-tauri-drag-region={canDrag || undefined}>
         <ProviderIcon providerId={provider.providerId} size={Math.round(fontSize * 2 * scale)} />
       </span>
       {state.isProblem ? (
-        <span className="floatbar__pct" aria-label={t(state.labelKey)} data-tauri-drag-region>!</span>
+        <span className="floatbar__pct" aria-label={t(state.labelKey)} data-tauri-drag-region={canDrag || undefined}>!</span>
       ) : (
-        <span className="floatbar__quota-values" data-tauri-drag-region>
+        <span className="floatbar__quota-values" data-tauri-drag-region={canDrag || undefined}>
           {rows.map(row => (
             <span
               key={row.label}
               className="floatbar__quota-row"
               style={{ color: row.color }}
               aria-label={`${row.label} ${remainingLabel}`}
-              data-tauri-drag-region
+              data-tauri-drag-region={canDrag || undefined}
             >
               {row.value}
             </span>
