@@ -589,7 +589,6 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
               <TaskbarQuotaPill
                 key={providerCostKey(p)}
                 provider={p}
-                thresholds={settings}
                 scale={scale}
                 fontSize={fontSize}
                 style={brandStyle(getProviderIcon(p.providerId).brandColor)}

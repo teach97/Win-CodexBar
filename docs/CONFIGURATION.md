@@ -106,6 +106,10 @@ the selected tray metric or the global used/remaining preference. Hover for
 period labels. A missing or informational quota is shown as `—`; an unavailable
 provider shows `!` with its status in the tooltip.
 
+Each remaining-quota row uses a continuous green (100%) → yellow (50%) → red
+(0%) color scale. The five-hour and weekly rows are colored independently;
+missing quotas retain the normal text color.
+
 ## Provider switcher keys
 
 The tray flyout switches providers from the keyboard (ported from upstream 0.67.0; the shortcuts are menu-local, not global hotkeys):

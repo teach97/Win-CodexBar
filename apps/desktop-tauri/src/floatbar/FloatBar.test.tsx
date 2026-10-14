@@ -292,6 +292,35 @@ describe("FloatBar", () => {
     });
   });
 
+  it.each([
+    { remaining: 100, color: "rgb(66, 240, 66)" },
+    { remaining: 75, color: "rgb(153, 240, 66)" },
+    { remaining: 50, color: "rgb(240, 240, 66)" },
+    { remaining: 25, color: "rgb(240, 153, 66)" },
+    { remaining: 0, color: "rgb(240, 66, 66)" },
+  ])("colors $remaining% remaining continuously instead of using warning thresholds", async ({ remaining, color }) => {
+    const provider = snapshot("codex", "Codex", 100 - remaining);
+    provider.primary.windowMinutes = 300;
+    tauriMocks.getCachedProviders.mockResolvedValue([provider]);
+    const { container } = renderFloatBar(bootstrap({ floatBarStyle: "taskbar", showAsUsed: true }));
+    await waitFor(() => {
+      expect(container.querySelector<HTMLElement>('[aria-label="5h remaining"]')?.style.color).toBe(color);
+      expect(container.querySelector<HTMLElement>('[aria-label="Weekly remaining"]')?.style.color).toBe("");
+    });
+  });
+
+  it("colors the session and weekly taskbar rows independently", async () => {
+    const provider = snapshot("antigravity", "Antigravity", 0, { secondary: { used: 100 } });
+    provider.primary.windowMinutes = 300;
+    provider.secondary!.windowMinutes = 7 * 24 * 60;
+    tauriMocks.getCachedProviders.mockResolvedValue([provider]);
+    const { container } = renderFloatBar(bootstrap({ floatBarStyle: "taskbar", enabledProviders: ["antigravity"] }));
+    await waitFor(() => {
+      expect(container.querySelector<HTMLElement>('[aria-label="5h remaining"]')?.style.color).toBe("rgb(66, 240, 66)");
+      expect(container.querySelector<HTMLElement>('[aria-label="Weekly remaining"]')?.style.color).toBe("rgb(240, 66, 66)");
+    });
+  });
+
   it("resizes taskbar text and its logo when the saved font size changes", async () => {
     tauriMocks.getCachedProviders.mockResolvedValue([snapshot("codex", "Codex", 25)]);
     tauriMocks.getSettingsSnapshot.mockResolvedValue(settings({ floatBarStyle: "taskbar", floatBarFontSize: 18 }));

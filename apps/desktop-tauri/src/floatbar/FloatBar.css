@@ -386,11 +386,8 @@ body.floatbar-window #root {
   padding: 0;
   color: inherit;
 }
-.floatbar--taskbar .floatbar__quota-row--warn {
-  color: #fbbf24;
-}
-.floatbar--taskbar .floatbar__quota-row--crit {
-  color: #f87171;
+.floatbar__quota-row {
+  transition: color 200ms linear;
 }
 .floatbar--taskbar .floatbar__provider-icon .provider-icon {
   color: var(--provider-brand-dark, var(--provider-brand, var(--accent)));
