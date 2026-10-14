@@ -6,14 +6,18 @@
 //! this one match arm.
 
 use super::{Provider, ProviderId, ProviderPaceCapability};
+use crate::providers::AerostackProvider;
 use crate::providers::AtlasCloudProvider;
 use crate::providers::ClawRouterProvider;
+use crate::providers::CosmicProvider;
+use crate::providers::ExaProvider;
 use crate::providers::IBMBobProvider;
 use crate::providers::LangdockProvider;
 use crate::providers::LinkupProvider;
 use crate::providers::LithosAIProvider;
 use crate::providers::MuseAIProvider;
 use crate::providers::SyntheticProvider;
+use crate::providers::TavilyProvider;
 use crate::providers::WorkBuddyProvider;
 use crate::providers::{
     AbacusProvider, AiAndProvider, AixyProvider, AlibabaProvider, AlibabaTokenPlanProvider,
@@ -30,9 +34,10 @@ use crate::providers::{
     NousProvider, OllamaProvider, OpenAIApiProvider, OpenCodeGoProvider, OpenCodeProvider,
     OpenRouterProvider, PerplexityProvider, PiProvider, PoeProvider, QoderProvider,
     QwenCloudProvider, RaycastProvider, ReplicateProvider, SailResearchProvider, SakanaProvider,
-    StepFunProvider, Sub2ApiProvider, T3ChatProvider, TypeSafeProvider, V0Provider, VeniceProvider,
-    VercelProvider, VertexAIProvider, WarpProvider, WayfinderProvider, WindsurfProvider,
-    XKiroProvider, XaiProvider, ZaiProvider, ZedProvider, ZenMuxProvider, ZoomMateProvider,
+    SofyaProvider, StepFunProvider, Sub2ApiProvider, T3ChatProvider, TinyApiProvider,
+    TypeSafeProvider, V0Provider, VeniceProvider, VercelProvider, VertexAIProvider, WarpProvider,
+    WayfinderProvider, WindsurfProvider, XKiroProvider, XaiProvider, XapiProvider, ZaiProvider,
+    ZedProvider, ZenMuxProvider, ZoomMateProvider,
 };
 
 /// Instantiate the concrete [`Provider`] implementation for a given [`ProviderId`].
@@ -57,6 +62,8 @@ pub fn instantiate(id: ProviderId) -> Box<dyn Provider> {
         ProviderId::LithosAI => Box::new(LithosAIProvider::new()),
         ProviderId::MuseAI => Box::new(MuseAIProvider::new()),
         ProviderId::WorkBuddy => Box::new(WorkBuddyProvider::new()),
+        ProviderId::Tavily => Box::new(TavilyProvider::new()),
+        ProviderId::Exa => Box::new(ExaProvider::new()),
         ProviderId::Factory => Box::new(FactoryProvider::new()),
         ProviderId::Zai => Box::new(ZaiProvider::new()),
         ProviderId::Kiro => Box::new(KiroProvider::new()),
@@ -103,6 +110,7 @@ pub fn instantiate(id: ProviderId) -> Box<dyn Provider> {
         ProviderId::HuggingFace => Box::new(HuggingFaceProvider::new()),
         ProviderId::Helmcode => Box::new(HelmcodeProvider::new()),
         ProviderId::V0 => Box::new(V0Provider::new()),
+        ProviderId::TinyApi => Box::new(TinyApiProvider::new()),
         ProviderId::TypeSafe => Box::new(TypeSafeProvider::new()),
         ProviderId::LLMProxy => Box::new(LLMProxyProvider::new()),
         ProviderId::Chutes => Box::new(ChutesProvider::new()),
@@ -114,6 +122,7 @@ pub fn instantiate(id: ProviderId) -> Box<dyn Provider> {
         ProviderId::Qoder => Box::new(QoderProvider::new()),
         ProviderId::CodeBuddy => Box::new(CodeBuddyProvider::new()),
         ProviderId::Sakana => Box::new(SakanaProvider::new()),
+        ProviderId::Sofya => Box::new(SofyaProvider::new()),
         ProviderId::Sub2Api => Box::new(Sub2ApiProvider::new()),
         ProviderId::Wayfinder => Box::new(WayfinderProvider::new()),
         ProviderId::ZenMux => Box::new(ZenMuxProvider::new()),
@@ -126,6 +135,7 @@ pub fn instantiate(id: ProviderId) -> Box<dyn Provider> {
         ProviderId::SailResearch => Box::new(SailResearchProvider::new()),
         ProviderId::Notion => Box::new(NotionProvider::new()),
         ProviderId::Xai => Box::new(XaiProvider::new()),
+        ProviderId::Xapi => Box::new(XapiProvider::new()),
         ProviderId::Fireworks => Box::new(FireworksProvider::new()),
         ProviderId::Meta => Box::new(MetaProvider::new()),
         ProviderId::Muse => Box::new(MuseProvider::new()),
@@ -139,6 +149,8 @@ pub fn instantiate(id: ProviderId) -> Box<dyn Provider> {
         ProviderId::XKiro => Box::new(XKiroProvider::new()),
         ProviderId::Raycast => Box::new(RaycastProvider::new()),
         ProviderId::Vercel => Box::new(VercelProvider::new()),
+        ProviderId::Cosmic => Box::new(CosmicProvider::new()),
+        ProviderId::Aerostack => Box::new(AerostackProvider::new()),
     }
 }
 
@@ -178,6 +190,8 @@ pub fn pace_capability(id: ProviderId) -> ProviderPaceCapability {
         | ProviderId::LithosAI
         | ProviderId::MuseAI
         | ProviderId::WorkBuddy
+        | ProviderId::Tavily
+        | ProviderId::Exa
         | ProviderId::Factory
         | ProviderId::Kiro
         | ProviderId::VertexAI
@@ -212,6 +226,7 @@ pub fn pace_capability(id: ProviderId) -> ProviderPaceCapability {
         | ProviderId::HuggingFace
         | ProviderId::Helmcode
         | ProviderId::V0
+        | ProviderId::TinyApi
         | ProviderId::TypeSafe
         | ProviderId::LLMProxy
         | ProviderId::Chutes
@@ -223,6 +238,7 @@ pub fn pace_capability(id: ProviderId) -> ProviderPaceCapability {
         | ProviderId::Qoder
         | ProviderId::CodeBuddy
         | ProviderId::Sakana
+        | ProviderId::Sofya
         | ProviderId::Sub2Api
         | ProviderId::Wayfinder
         | ProviderId::ZenMux
@@ -234,6 +250,7 @@ pub fn pace_capability(id: ProviderId) -> ProviderPaceCapability {
         | ProviderId::Replicate
         | ProviderId::SailResearch
         | ProviderId::Xai
+        | ProviderId::Xapi
         | ProviderId::Fireworks
         | ProviderId::Meta
         | ProviderId::Muse
@@ -246,7 +263,9 @@ pub fn pace_capability(id: ProviderId) -> ProviderPaceCapability {
         | ProviderId::DevPass
         | ProviderId::XKiro
         | ProviderId::Raycast
-        | ProviderId::Vercel => ProviderPaceCapability::UNSUPPORTED,
+        | ProviderId::Vercel
+        | ProviderId::Cosmic
+        | ProviderId::Aerostack => ProviderPaceCapability::UNSUPPORTED,
     }
 }
 

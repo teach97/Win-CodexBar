@@ -255,6 +255,8 @@ fn cookie_source_provider(provider_id: &str) -> Option<codexbar::core::ProviderI
         "museai" => ProviderId::MuseAI,
         "lithosai" => ProviderId::LithosAI,
         "langdock" => ProviderId::Langdock,
+        "tinyapi" => ProviderId::TinyApi,
+        "xapi" => ProviderId::Xapi,
         _ => return None,
     })
 }
@@ -367,6 +369,8 @@ fn workspace_provider(provider_id: &str) -> Option<codexbar::core::ProviderId> {
         "helmcode" => ProviderId::Helmcode,
         "gitkraken" => ProviderId::GitKraken,
         "muse" => ProviderId::Muse,
+        "exa" => ProviderId::Exa,
+        "cosmic" => ProviderId::Cosmic,
         _ => return None,
     })
 }
@@ -497,6 +501,16 @@ mod tests {
     #[test]
     fn maps_llmman_workspace_provider() {
         assert_eq!(workspace_provider("llmman"), Some(ProviderId::LLMMan));
+    }
+
+    #[test]
+    fn maps_exa_api_key_id_workspace_provider() {
+        assert_eq!(workspace_provider("exa"), Some(ProviderId::Exa));
+    }
+
+    #[test]
+    fn maps_cosmic_project_provider() {
+        assert_eq!(workspace_provider("cosmic"), Some(ProviderId::Cosmic));
     }
 
     #[test]
@@ -888,6 +902,20 @@ pub fn cookie_source_options_for(provider_id: &str, lang: Language) -> Vec<Cooki
         // Upstream's WorkBuddy cookie source: automatic browser import,
         // a pasted header, or off.
         "workbuddy" => vec![
+            cookie_option(lang, "auto", None),
+            cookie_option(lang, "manual", None),
+            cookie_option(lang, "off", None),
+        ],
+        // Upstream's TinyApi cookie source: automatic browser import,
+        // a pasted header, or off.
+        "tinyapi" => vec![
+            cookie_option(lang, "auto", None),
+            cookie_option(lang, "manual", None),
+            cookie_option(lang, "off", None),
+        ],
+        // X API cookie source: automatic browser import,
+        // a pasted header, or off.
+        "xapi" => vec![
             cookie_option(lang, "auto", None),
             cookie_option(lang, "manual", None),
             cookie_option(lang, "off", None),

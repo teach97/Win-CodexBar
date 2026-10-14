@@ -66,6 +66,7 @@ pub enum ProviderId {
     HuggingFace,
     Helmcode,
     V0,
+    TinyApi,
     TypeSafe,
     LLMProxy,
     Chutes,
@@ -77,6 +78,7 @@ pub enum ProviderId {
     Qoder,
     CodeBuddy,
     Sakana,
+    Sofya,
     Sub2Api,
     Wayfinder,
     ZenMux,
@@ -87,6 +89,7 @@ pub enum ProviderId {
     QwenCloud,
     Notion,
     Xai,
+    Xapi,
     Fireworks,
     AtlasCloud,
     #[serde(alias = "metaspark")]
@@ -112,6 +115,10 @@ pub enum ProviderId {
     MuseAI,
     WorkBuddy,
     SailResearch,
+    Tavily,
+    Exa,
+    Cosmic,
+    Aerostack,
 }
 
 impl ProviderId {
@@ -171,6 +178,7 @@ impl ProviderId {
             ProviderId::HuggingFace,
             ProviderId::Helmcode,
             ProviderId::V0,
+            ProviderId::TinyApi,
             ProviderId::TypeSafe,
             ProviderId::LLMProxy,
             ProviderId::Chutes,
@@ -182,6 +190,7 @@ impl ProviderId {
             ProviderId::Qoder,
             ProviderId::CodeBuddy,
             ProviderId::Sakana,
+            ProviderId::Sofya,
             ProviderId::Sub2Api,
             ProviderId::Wayfinder,
             ProviderId::ZenMux,
@@ -192,6 +201,7 @@ impl ProviderId {
             ProviderId::QwenCloud,
             ProviderId::Notion,
             ProviderId::Xai,
+            ProviderId::Xapi,
             ProviderId::Fireworks,
             ProviderId::AtlasCloud,
             ProviderId::Meta,
@@ -216,6 +226,10 @@ impl ProviderId {
             ProviderId::MuseAI,
             ProviderId::WorkBuddy,
             ProviderId::SailResearch,
+            ProviderId::Tavily,
+            ProviderId::Exa,
+            ProviderId::Cosmic,
+            ProviderId::Aerostack,
         ]
     }
 
@@ -281,6 +295,7 @@ impl ProviderId {
             ProviderId::MuseAI => "museai",
             ProviderId::WorkBuddy => "workbuddy",
             ProviderId::SailResearch => "sailresearch",
+            ProviderId::Tavily => "tavily",
             ProviderId::AiAnd => "aiand",
             ProviderId::Windsurf => "windsurf",
             ProviderId::Manus => "manus",
@@ -297,6 +312,7 @@ impl ProviderId {
             ProviderId::HuggingFace => "huggingface",
             ProviderId::Helmcode => "helmcode",
             ProviderId::V0 => "v0",
+            ProviderId::TinyApi => "tinyapi",
             ProviderId::TypeSafe => "typesafe",
             ProviderId::LLMProxy => "llmproxy",
             ProviderId::Chutes => "chutes",
@@ -308,6 +324,7 @@ impl ProviderId {
             ProviderId::Qoder => "qoder",
             ProviderId::CodeBuddy => "codebuddy",
             ProviderId::Sakana => "sakana",
+            ProviderId::Sofya => "sofya",
             ProviderId::Sub2Api => "sub2api",
             ProviderId::Wayfinder => "wayfinder",
             ProviderId::ZenMux => "zenmux",
@@ -318,8 +335,12 @@ impl ProviderId {
             ProviderId::QwenCloud => "qwen-cloud",
             ProviderId::Notion => "notion",
             ProviderId::Xai => "xai",
+            ProviderId::Xapi => "xapi",
             ProviderId::Replicate => "replicate",
             ProviderId::AtlasCloud => "atlascloud",
+            ProviderId::Exa => "exa",
+            ProviderId::Cosmic => "cosmic",
+            ProviderId::Aerostack => "aerostack",
         }
     }
 
@@ -386,6 +407,7 @@ impl ProviderId {
             ProviderId::MuseAI => "Muse (muse.ai)",
             ProviderId::WorkBuddy => "WorkBuddy",
             ProviderId::SailResearch => "Sail Research",
+            ProviderId::Tavily => "Tavily",
             ProviderId::AiAnd => "ai&",
             ProviderId::Windsurf => "Windsurf",
             ProviderId::Manus => "Manus",
@@ -402,6 +424,7 @@ impl ProviderId {
             ProviderId::HuggingFace => "Hugging Face",
             ProviderId::Helmcode => "Helmcode",
             ProviderId::V0 => "v0",
+            ProviderId::TinyApi => "TinyApi",
             ProviderId::TypeSafe => "TypeSafe",
             ProviderId::LLMProxy => "LLM Proxy",
             ProviderId::Chutes => "Chutes",
@@ -414,6 +437,7 @@ impl ProviderId {
             ProviderId::Qoder => "Qoder",
             ProviderId::CodeBuddy => "CodeBuddy",
             ProviderId::Sakana => "Sakana AI",
+            ProviderId::Sofya => "Sofya",
             ProviderId::Sub2Api => "sub2api",
             ProviderId::Wayfinder => "Wayfinder",
             ProviderId::ZenMux => "ZenMux",
@@ -424,8 +448,12 @@ impl ProviderId {
             ProviderId::QwenCloud => "Qwen Cloud",
             ProviderId::Notion => "Notion AI",
             ProviderId::Xai => "xAI",
+            ProviderId::Xapi => "X API",
             ProviderId::Replicate => "Replicate",
             ProviderId::AtlasCloud => "Atlas Cloud",
+            ProviderId::Exa => "Exa",
+            ProviderId::Cosmic => "Cosmic AI",
+            ProviderId::Aerostack => "Aerostack",
         }
     }
 
@@ -466,6 +494,7 @@ impl ProviderId {
             ProviderId::Qoder => Some("qoder.com"),
             ProviderId::CodeBuddy => Some("codebuddy.cn"),
             ProviderId::Sakana => Some("console.sakana.ai"),
+            ProviderId::Sofya => None,
             ProviderId::LongCat => Some("longcat.chat"),
             ProviderId::Replicate => Some("replicate.com"),
             ProviderId::AtlasCloud => None,
@@ -507,6 +536,7 @@ impl ProviderId {
             ProviderId::MuseAI => Some("muse.ai"),
             ProviderId::WorkBuddy => Some("workbuddy.cn"),
             ProviderId::SailResearch => None,
+            ProviderId::Tavily => None,
             ProviderId::AiAnd => None,
             ProviderId::Windsurf => None,
             ProviderId::Doubao => None,
@@ -519,6 +549,7 @@ impl ProviderId {
             ProviderId::Groq => Some("groq.com"),
             ProviderId::HuggingFace => None,
             ProviderId::Helmcode => Some("helmcode.com"),
+            ProviderId::TinyApi => Some("tinyapi.rest"),
             ProviderId::TypeSafe => Some("typesafe.ai"),
             ProviderId::V0 => None,
             ProviderId::LLMProxy => None,
@@ -536,7 +567,11 @@ impl ProviderId {
             ProviderId::ZoomMate => Some("zoommate.zoom.us"),
             ProviderId::QwenCloud => Some("qwencloud.com"),
             ProviderId::Notion => Some("app.notion.com"),
+            ProviderId::Xapi => Some("x.com"),
             ProviderId::Xai => None,
+            ProviderId::Exa => None,
+            ProviderId::Cosmic => None,
+            ProviderId::Aerostack => None,
         }
     }
 
@@ -631,12 +666,14 @@ impl ProviderId {
             }
             "grok" | "supergrok" | "super-grok" => Some(ProviderId::Grok),
             "xai" | "x.ai" | "x-ai" => Some(ProviderId::Xai),
+            "xapi" | "x-api" | "x api" => Some(ProviderId::Xapi),
             "elevenlabs" | "eleven-labs" | "11labs" => Some(ProviderId::ElevenLabs),
             "deepgram" | "dg" => Some(ProviderId::Deepgram),
             "groq" | "groqcloud" | "groq-cloud" | "groq cloud" => Some(ProviderId::Groq),
             "huggingface" | "hugging-face" | "hugging face" | "hf" => Some(ProviderId::HuggingFace),
             "helmcode" | "nan-builders" | "nan builders" => Some(ProviderId::Helmcode),
             "v0" | "v0-dev" | "v0.dev" => Some(ProviderId::V0),
+            "tinyapi" | "tiny-api" => Some(ProviderId::TinyApi),
             "typesafe" | "type-safe" | "type safe" => Some(ProviderId::TypeSafe),
             "llmproxy" | "llm-proxy" | "llm proxy" => Some(ProviderId::LLMProxy),
             "chutes" | "chutes-ai" | "chutes ai" => Some(ProviderId::Chutes),
@@ -652,6 +689,7 @@ impl ProviderId {
                 Some(ProviderId::CodeBuddy)
             }
             "sakana" | "sakana-ai" | "sakana ai" => Some(ProviderId::Sakana),
+            "sofya" => Some(ProviderId::Sofya),
             "sub2api" | "sub-2-api" | "sub 2 api" => Some(ProviderId::Sub2Api),
             "wayfinder" => Some(ProviderId::Wayfinder),
             "zenmux" | "zen-mux" => Some(ProviderId::ZenMux),
@@ -675,6 +713,10 @@ impl ProviderId {
             "museai" | "muse (muse.ai)" => Some(ProviderId::MuseAI),
             "workbuddy" => Some(ProviderId::WorkBuddy),
             "sailresearch" | "sail research" => Some(ProviderId::SailResearch),
+            "tavily" => Some(ProviderId::Tavily),
+            "exa" => Some(ProviderId::Exa),
+            "cosmic" | "cosmic ai" => Some(ProviderId::Cosmic),
+            "aerostack" => Some(ProviderId::Aerostack),
             _ => None,
         }
     }
@@ -1275,6 +1317,7 @@ pub fn cli_name_map() -> HashMap<&'static str, ProviderId> {
     map.insert("llm-proxy", ProviderId::LLMProxy);
     map.insert("cross-model", ProviderId::CrossModel);
     map.insert("sakana-ai", ProviderId::Sakana);
+    map.insert("sofya", ProviderId::Sofya);
     map.insert("sub-2-api", ProviderId::Sub2Api);
     map.insert("notion-ai", ProviderId::Notion);
     map.insert("notionai", ProviderId::Notion);
@@ -1346,6 +1389,7 @@ pub fn brand_color(id: ProviderId) -> &'static str {
         ProviderId::HuggingFace => "#FFD21E",
         ProviderId::Helmcode => "#4934E1",
         ProviderId::V0 => "#111111",
+        ProviderId::TinyApi => "#F97316",
         ProviderId::TypeSafe => "#111111",
         ProviderId::LLMProxy => "#24B47E",
         ProviderId::Chutes => "#3184FF",
@@ -1357,6 +1401,7 @@ pub fn brand_color(id: ProviderId) -> &'static str {
         ProviderId::Qoder => "#10B981",
         ProviderId::CodeBuddy => "#0052D9",
         ProviderId::Sakana => "#2975DB",
+        ProviderId::Sofya => "#B0B820",
         ProviderId::Sub2Api => "#14B8A6",
         ProviderId::Wayfinder => "#10A37F",
         ProviderId::ZenMux => "#6C5CE7",
@@ -1367,6 +1412,7 @@ pub fn brand_color(id: ProviderId) -> &'static str {
         ProviderId::QwenCloud => "#615CED",
         ProviderId::Notion => "#337EA9",
         ProviderId::Xai => "#8E8E93",
+        ProviderId::Xapi => "#71767B",
         ProviderId::Fireworks => "#F25B1C",
         ProviderId::Meta => "#0467DF",
         ProviderId::Muse => "#0668E1",
@@ -1394,6 +1440,10 @@ pub fn brand_color(id: ProviderId) -> &'static str {
         ProviderId::MuseAI => "#0668E1",
         ProviderId::WorkBuddy => "#0DC8A6",
         ProviderId::SailResearch => "#2C4681",
+        ProviderId::Tavily => "#0F766E",
+        ProviderId::Exa => "#0143D9",
+        ProviderId::Cosmic => "#6366F1",
+        ProviderId::Aerostack => "#6366F1",
     }
 }
 
@@ -1408,7 +1458,7 @@ mod tests {
     #[test]
     fn test_provider_id_all() {
         let all = ProviderId::all();
-        assert_eq!(all.len(), 98);
+        assert_eq!(all.len(), 105);
         assert!(all.contains(&ProviderId::Claude));
         assert!(all.contains(&ProviderId::Codex));
         assert!(all.contains(&ProviderId::Pi));
@@ -1454,6 +1504,7 @@ mod tests {
         assert!(all.contains(&ProviderId::Qoder));
         assert!(all.contains(&ProviderId::CodeBuddy));
         assert!(all.contains(&ProviderId::Sakana));
+        assert!(all.contains(&ProviderId::Sofya));
         assert!(all.contains(&ProviderId::Sub2Api));
         assert!(all.contains(&ProviderId::Wayfinder));
         assert!(all.contains(&ProviderId::ZenMux));
@@ -1464,6 +1515,7 @@ mod tests {
         assert!(all.contains(&ProviderId::QwenCloud));
         assert!(all.contains(&ProviderId::Notion));
         assert!(all.contains(&ProviderId::Xai));
+        assert!(all.contains(&ProviderId::Xapi));
         assert!(all.contains(&ProviderId::Meta));
         assert!(all.contains(&ProviderId::Replicate));
         assert!(all.contains(&ProviderId::Muse));
@@ -1487,6 +1539,10 @@ mod tests {
         assert!(all.contains(&ProviderId::MuseAI));
         assert!(all.contains(&ProviderId::WorkBuddy));
         assert!(all.contains(&ProviderId::SailResearch));
+        assert!(all.contains(&ProviderId::TinyApi));
+        assert!(all.contains(&ProviderId::Tavily));
+        assert!(all.contains(&ProviderId::Exa));
+        assert!(all.contains(&ProviderId::Aerostack));
     }
 
     #[test]
