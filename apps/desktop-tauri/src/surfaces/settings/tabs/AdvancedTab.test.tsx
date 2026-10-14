@@ -79,6 +79,7 @@ const settings: SettingsSnapshot = {
   floatBarOpacity: 0.9,
   floatBarScale: 100,
   floatBarFontSize: 14,
+  floatBarColorGradient: true,
   floatBarOrientation: "horizontal",
   floatBarStyle: "floating",
   floatBarClickThrough: false,

@@ -308,6 +308,7 @@ export interface SettingsSnapshot {
   floatBarScale: number;
   /** Taskbar font size in CSS pixels, 10..=20. */
   floatBarFontSize: number;
+  floatBarColorGradient: boolean;
   floatBarOrientation: FloatBarOrientation;
   floatBarStyle: FloatBarStyle;
   floatBarClickThrough: boolean;
@@ -456,6 +457,7 @@ export interface SettingsUpdate {
   floatBarOpacity?: number;
   floatBarScale?: number;
   floatBarFontSize?: number;
+  floatBarColorGradient?: boolean;
   floatBarOrientation?: FloatBarOrientation;
   floatBarStyle?: FloatBarStyle;
   floatBarClickThrough?: boolean;

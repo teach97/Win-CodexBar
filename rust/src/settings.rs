@@ -387,6 +387,10 @@ pub struct Settings {
     #[serde(default = "default_float_bar_font_size")]
     pub float_bar_font_size: u8,
 
+    /// Color taskbar quota percentages by their remaining capacity.
+    #[serde(default = "default_true")]
+    pub float_bar_color_gradient: bool,
+
     /// Floating-bar orientation: "horizontal" (default) or "vertical".
     #[serde(default = "default_float_bar_orientation")]
     pub float_bar_orientation: String,
@@ -738,6 +742,7 @@ impl Default for Settings {
             float_bar_opacity: default_float_bar_opacity(),
             float_bar_scale: default_float_bar_scale(),
             float_bar_font_size: default_float_bar_font_size(),
+            float_bar_color_gradient: true,
             float_bar_orientation: default_float_bar_orientation(),
             float_bar_style: default_float_bar_style(),
             float_bar_click_through: false,

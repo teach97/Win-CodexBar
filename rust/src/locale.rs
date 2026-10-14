@@ -1311,6 +1311,8 @@ locale_keys! {
     FloatBarSizeAriaLabel,
     FloatBarFontSize,
     FloatBarFontSizeHelper,
+    FloatBarColorGradient,
+    FloatBarColorGradientHelper,
     FloatBarShowResetInline,
     FloatBarShowResetInlineHelper,
     FloatBarInvertColors,

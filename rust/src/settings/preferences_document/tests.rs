@@ -69,6 +69,7 @@ fn customized_settings() -> Settings {
         float_bar_opacity: 60,
         float_bar_scale: 120,
         float_bar_font_size: 18,
+        float_bar_color_gradient: false,
         float_bar_orientation: "vertical".to_string(),
         float_bar_style: "taskbar".to_string(),
         float_bar_dark_text: true,
@@ -148,6 +149,7 @@ fn round_trips_every_allowlisted_preference() {
     assert_eq!(again, exported);
     assert_eq!(target.window_scale_percent, 150);
     assert_eq!(target.float_bar_font_size, 18);
+    assert!(!target.float_bar_color_gradient);
     assert_eq!(target.ui_language, Language::Japanese);
     assert!(!target.status_checks_enabled);
     assert!(again.to_json().contains("\"status_checks_enabled\": false"));

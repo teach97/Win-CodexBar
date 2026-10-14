@@ -109,6 +109,9 @@ provider shows `!` with its status in the tooltip.
 Each remaining-quota row uses a continuous green (100%) → yellow (50%) → red
 (0%) color scale. The five-hour and weekly rows are colored independently;
 missing quotas retain the normal text color.
+**Remaining quota color gradient** enables this coloring by default. Disable
+it to restore the normal text color. The setting applies immediately, persists
+after restart, and is included in preferences export/import.
 
 ## Provider switcher keys
 

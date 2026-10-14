@@ -135,6 +135,17 @@ export default function FloatBarSettingsSection({ settings, saving, set }: Props
           />
         </Field>
         <Field
+          label={t("FloatBarColorGradient")}
+          description={t("FloatBarColorGradientHelper")}
+          leading
+        >
+          <Toggle
+            checked={settings.floatBarColorGradient ?? true}
+            disabled={saving || !settings.floatBarEnabled || settings.floatBarStyle !== "taskbar"}
+            onChange={(v) => set({ floatBarColorGradient: v })}
+          />
+        </Field>
+        <Field
           label={t("FloatBarShowCost")}
           description={t("FloatBarShowCostDescription")}
           leading

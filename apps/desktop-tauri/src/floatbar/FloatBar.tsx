@@ -591,6 +591,7 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
                 provider={p}
                 scale={scale}
                 fontSize={fontSize}
+                colorGradient={settings.floatBarColorGradient ?? true}
                 style={brandStyle(getProviderIcon(p.providerId).brandColor)}
               />
             ) : (

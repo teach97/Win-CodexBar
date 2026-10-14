@@ -134,6 +134,7 @@ pub struct SettingsPatch {
     pub opacity: Option<u8>,
     pub scale: Option<u8>,
     pub font_size: Option<u8>,
+    pub color_gradient: Option<bool>,
     pub orientation: Option<String>,
     pub style: Option<String>,
     pub click_through: Option<bool>,
@@ -149,6 +150,7 @@ impl SettingsPatch {
             && self.opacity.is_none()
             && self.scale.is_none()
             && self.font_size.is_none()
+            && self.color_gradient.is_none()
             && self.orientation.is_none()
             && self.style.is_none()
             && self.click_through.is_none()
@@ -172,6 +174,9 @@ impl SettingsPatch {
         }
         if let Some(v) = self.font_size {
             settings.float_bar_font_size = codexbar::settings::clamp_float_bar_font_size(v);
+        }
+        if let Some(v) = self.color_gradient {
+            settings.float_bar_color_gradient = v;
         }
         if let Some(v) = &self.orientation {
             settings.float_bar_orientation = codexbar::settings::normalize_float_bar_orientation(v);
@@ -228,6 +233,18 @@ mod tests {
     }
 
     #[test]
+    fn gradient_only_patch_triggers_live_configuration_update() {
+        let patch = SettingsPatch {
+            color_gradient: Some(false),
+            ..SettingsPatch::default()
+        };
+        assert!(!patch.is_empty());
+        let mut settings = Settings::default();
+        patch.apply(&mut settings);
+        assert!(!settings.float_bar_color_gradient);
+    }
+
+    #[test]
     fn settings_patch_apply_only_writes_present_fields() {
         let mut s = Settings {
             float_bar_enabled: false,
@@ -245,6 +262,7 @@ mod tests {
             opacity: Some(45),
             scale: Some(135),
             font_size: Some(18),
+            color_gradient: Some(false),
             style: Some("taskbar".into()),
             dark_text: Some(true),
             show_reset_inline: Some(true),
@@ -255,6 +273,7 @@ mod tests {
         assert_eq!(s.float_bar_opacity, 45);
         assert_eq!(s.float_bar_scale, 135);
         assert_eq!(s.float_bar_font_size, 18);
+        assert!(!s.float_bar_color_gradient);
         assert_eq!(s.float_bar_style, "taskbar");
         assert!(s.float_bar_dark_text);
         assert!(s.float_bar_show_reset_inline);
@@ -290,6 +309,10 @@ mod tests {
         assert_eq!(s.float_bar_opacity, original.float_bar_opacity);
         assert_eq!(s.float_bar_scale, original.float_bar_scale);
         assert_eq!(s.float_bar_font_size, original.float_bar_font_size);
+        assert_eq!(
+            s.float_bar_color_gradient,
+            original.float_bar_color_gradient
+        );
         assert_eq!(s.float_bar_orientation, original.float_bar_orientation);
         assert_eq!(s.float_bar_style, original.float_bar_style);
         assert_eq!(s.float_bar_dark_text, original.float_bar_dark_text);

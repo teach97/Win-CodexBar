@@ -193,6 +193,7 @@ function settings(overrides: Partial<SettingsSnapshot> = {}): SettingsSnapshot {
     floatBarOpacity: 80,
     floatBarScale: 100,
     floatBarFontSize: 14,
+    floatBarColorGradient: true,
     floatBarOrientation: "horizontal",
     floatBarStyle: "floating",
     floatBarClickThrough: false,
@@ -319,6 +320,19 @@ describe("FloatBar", () => {
       expect(container.querySelector<HTMLElement>('[aria-label="5h remaining"]')?.style.color).toBe("rgb(66, 240, 66)");
       expect(container.querySelector<HTMLElement>('[aria-label="Weekly remaining"]')?.style.color).toBe("rgb(240, 66, 66)");
     });
+  });
+
+  it("removes gradient colors immediately when disabled in settings", async () => {
+    const provider = snapshot("codex", "Codex", 25);
+    provider.primary.windowMinutes = 300;
+    tauriMocks.getCachedProviders.mockResolvedValue([provider]);
+    tauriMocks.getSettingsSnapshot.mockResolvedValue(settings({ floatBarStyle: "taskbar", floatBarColorGradient: false }));
+    const { container } = renderFloatBar(bootstrap({ floatBarStyle: "taskbar" }));
+    await waitFor(() => expect(container.querySelector<HTMLElement>('[aria-label="5h remaining"]')?.style.color).toBe("rgb(153, 240, 66)"));
+    await act(async () => {
+      eventMocks.listen.mock.calls.find(([name]) => name === "float-bar-config-changed")?.[1]({ payload: null });
+    });
+    await waitFor(() => expect(container.querySelector<HTMLElement>('[aria-label="5h remaining"]')?.style.color).toBe(""));
   });
 
   it("resizes taskbar text and its logo when the saved font size changes", async () => {

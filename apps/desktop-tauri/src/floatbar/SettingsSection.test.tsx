@@ -12,6 +12,7 @@ const settings = {
   floatBarOpacity: 90,
   floatBarScale: 100,
   floatBarFontSize: 14,
+  floatBarColorGradient: true,
   floatBarOrientation: "horizontal",
   floatBarStyle: "floating",
   floatBarShowCost: false,
@@ -25,6 +26,15 @@ const settings = {
 } as unknown as SettingsSnapshot;
 
 describe("FloatBar settings", () => {
+  it.each([true, false])("toggles the persisted gradient from %s", (enabled) => {
+    const set = vi.fn();
+    render(<FloatBarSettingsSection settings={{ ...settings, floatBarStyle: "taskbar", floatBarColorGradient: enabled }} saving={false} set={set} />);
+    const toggle = screen.getByRole("checkbox", { name: "FloatBarColorGradient" });
+    expect(toggle).toHaveProperty("checked", enabled);
+    fireEvent.click(toggle);
+    expect(set).toHaveBeenCalledWith({ floatBarColorGradient: !enabled });
+  });
+
   it("commits a taskbar font size independently of the overall scale", () => {
     const set = vi.fn();
     render(<FloatBarSettingsSection settings={{ ...settings, floatBarStyle: "taskbar" }} saving={false} set={set} />);

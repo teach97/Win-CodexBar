@@ -605,6 +605,21 @@ fn float_bar_font_size_round_trips_and_clamps_on_load() {
 }
 
 #[test]
+fn float_bar_color_gradient_defaults_on_and_preserves_disabled_state() {
+    let legacy: Settings =
+        serde_json::from_str(r#"{"enabled_providers": []}"#).expect("load legacy settings");
+    assert!(legacy.float_bar_color_gradient);
+    assert!(Settings::default().float_bar_color_gradient);
+    let disabled: Settings =
+        serde_json::from_str(r#"{"enabled_providers": [], "float_bar_color_gradient": false}"#)
+            .expect("load disabled gradient");
+    assert!(!disabled.float_bar_color_gradient);
+    let saved = serde_json::to_string(&disabled).expect("save settings");
+    let reloaded: Settings = serde_json::from_str(&saved).expect("reload settings");
+    assert!(!reloaded.float_bar_color_gradient);
+}
+
+#[test]
 fn main_window_scale_defaults_to_100_percent() {
     let settings = Settings::default();
     assert_eq!(settings.window_scale_percent, 100);

@@ -8,10 +8,11 @@ interface Props {
   provider: ProviderUsageSnapshot;
   scale: number;
   fontSize: number;
+  colorGradient: boolean;
   style: CSSProperties;
 }
 
-export default function TaskbarQuotaPill({ provider, scale, fontSize, style }: Props) {
+export default function TaskbarQuotaPill({ provider, scale, fontSize, colorGradient, style }: Props) {
   const { t } = useLocale();
   const state = describeProviderState(provider.errorState);
   const remainingLabel = t("FloatBarRemainingSuffix");
@@ -26,7 +27,7 @@ export default function TaskbarQuotaPill({ provider, scale, fontSize, style }: P
       ? Math.max(0, Math.min(100, window.remainingPercent))
       : null;
     const value = remaining === null ? "—" : `${Math.round(remaining)}%`;
-    const color = remaining === null ? undefined : `hsl(${remaining * 1.2}, 85%, 60%)`;
+    const color = colorGradient && remaining !== null ? `hsl(${remaining * 1.2}, 85%, 60%)` : undefined;
     return { label, value, color };
   });
 
