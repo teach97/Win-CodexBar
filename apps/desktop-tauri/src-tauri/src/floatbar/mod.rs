@@ -134,6 +134,8 @@ pub fn apply_state(app: &tauri::AppHandle, settings: &Settings) {
             return;
         }
         if was_docked {
+            // Reparenting may hide the HWND while Tauri still caches it as visible.
+            let _ = w.hide();
             let _ = window::show(
                 app,
                 settings.float_bar_opacity,

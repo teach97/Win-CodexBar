@@ -312,14 +312,22 @@ mod platform {
         let Some(saved) = saved.filter(|saved| saved.hwnd == child) else {
             return Ok(());
         };
+        restore_native_window(saved)?;
+        window.set_always_on_top(true).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    fn restore_native_window(saved: SavedWindow) -> Result<(), String> {
+        let child = saved.hwnd;
         // SAFETY: Restore only our captured HWND styles/position, without activation.
         unsafe {
             SetLastError(0);
             SetParent(child, 0);
+            // WS_CHILD still makes GetParent report the desktop until it is cleared.
+            SetWindowLongPtrW(child, GWL_STYLE, saved.style);
             if GetParent(child) != 0 {
                 return Err(std::io::Error::last_os_error().to_string());
             }
-            SetWindowLongPtrW(child, GWL_STYLE, saved.style);
             SetWindowLongPtrW(child, GWL_EXSTYLE, saved.extended_style);
             if SetWindowPos(
                 child,
@@ -334,8 +342,83 @@ mod platform {
                 return Err(std::io::Error::last_os_error().to_string());
             }
         }
-        window.set_always_on_top(true).map_err(|e| e.to_string())?;
         Ok(())
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn detaching_a_child_restores_its_top_level_parent_and_style() {
+            let class = wide("STATIC");
+            // Invisible windows owned by this test process; no shell window is modified.
+            unsafe {
+                let parent = CreateWindowExW(
+                    0,
+                    class.as_ptr(),
+                    std::ptr::null(),
+                    WS_POPUP as u32,
+                    -10000,
+                    -10000,
+                    1,
+                    1,
+                    0,
+                    0,
+                    0,
+                    std::ptr::null(),
+                );
+                assert_ne!(parent, 0);
+                let child = CreateWindowExW(
+                    0,
+                    class.as_ptr(),
+                    std::ptr::null(),
+                    WS_CHILD as u32,
+                    0,
+                    0,
+                    1,
+                    1,
+                    parent,
+                    0,
+                    0,
+                    std::ptr::null(),
+                );
+                assert_ne!(child, 0);
+                let result = restore_native_window(SavedWindow {
+                    hwnd: child,
+                    style: 0,
+                    extended_style: 0,
+                    left: -10000,
+                    top: -10000,
+                });
+                let restored_parent = GetParent(child);
+                let child_style = GetWindowLongPtrW(child, GWL_STYLE) & WS_CHILD;
+                DestroyWindow(child);
+                DestroyWindow(parent);
+                assert!(result.is_ok(), "{result:?}");
+                assert_eq!(restored_parent, 0);
+                assert_eq!(child_style, 0);
+            }
+        }
+
+        #[link(name = "user32")]
+        unsafe extern "system" {
+            fn CreateWindowExW(
+                ex: u32,
+                class: *const u16,
+                title: *const u16,
+                style: u32,
+                x: i32,
+                y: i32,
+                width: i32,
+                height: i32,
+                parent: isize,
+                menu: isize,
+                instance: isize,
+                data: *const c_void,
+            ) -> isize;
+            fn DestroyWindow(hwnd: isize) -> i32;
+        }
     }
 
     #[repr(C)]
