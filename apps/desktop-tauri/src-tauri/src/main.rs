@@ -324,6 +324,7 @@ fn main() {
             commands::open_path,
             tray_visibility::tray_visibility_status,
             floatbar::show_float_bar,
+            floatbar::get_float_bar_taskbars,
             floatbar::hide_float_bar,
             floatbar::set_float_bar_opacity,
             floatbar::set_float_bar_click_through,

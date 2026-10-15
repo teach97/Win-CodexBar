@@ -121,6 +121,9 @@ const ALLOWED_PREFERENCES: &[(&str, Validator)] = &[
     ("float_bar_opacity", uint_in::<30, 100>),
     ("float_bar_scale", uint_in::<75, 200>),
     ("float_bar_font_size", uint_in::<10, 20>),
+    ("float_bar_color_gradient", typed::<bool>),
+    ("float_bar_taskbar_docked", typed::<bool>),
+    ("float_bar_taskbar_position", uint_in::<0, 100>),
     ("float_bar_orientation", |v| {
         one_of(v, &["horizontal", "vertical"])
     }),
@@ -153,6 +156,7 @@ pub const EXCLUDED_KEYS: &[&str] = &[
     "notification_sound_paths",
     "codex_custom_sessions_dirs",
     "agent_session_ssh_hosts",
+    "float_bar_taskbar_monitor",
     // Pinned to this machine's zone on first launch; no settings control.
     "cost_usage_bucket_time_zone",
     // Consent, autostart and other side-effect toggles.

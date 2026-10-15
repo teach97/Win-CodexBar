@@ -1,4 +1,4 @@
-import { act, render, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const tauriMocks = vi.hoisted(() => ({
@@ -18,8 +18,9 @@ const eventMocks = vi.hoisted(() => ({
 }));
 
 const windowMocks = vi.hoisted(() => ({
+  startDragging: vi.fn().mockResolvedValue(undefined),
   getCurrentWindow: vi.fn(() => ({
-    startDragging: vi.fn().mockResolvedValue(undefined),
+    startDragging: windowMocks.startDragging,
   })),
 }));
 
@@ -193,6 +194,10 @@ function settings(overrides: Partial<SettingsSnapshot> = {}): SettingsSnapshot {
     floatBarOpacity: 80,
     floatBarScale: 100,
     floatBarFontSize: 14,
+    floatBarColorGradient: true,
+    floatBarTaskbarDocked: false,
+    floatBarTaskbarMonitor: "",
+    floatBarTaskbarPosition: 10,
     floatBarOrientation: "horizontal",
     floatBarStyle: "floating",
     floatBarClickThrough: false,
@@ -290,6 +295,68 @@ describe("FloatBar", () => {
       const rows = container.querySelectorAll(".floatbar__quota-row");
       expect(Array.from(rows, row => row.textContent)).toEqual(["87%", "45%"]);
     });
+  });
+
+  it("keeps a docked taskbar horizontal and prevents dragging from every pill", async () => {
+    const provider = snapshot("codex", "Codex", 25);
+    provider.primary.windowMinutes = 300;
+    tauriMocks.getCachedProviders.mockResolvedValue([provider]);
+    const { container } = renderFloatBar(bootstrap({ floatBarStyle: "taskbar", floatBarTaskbarDocked: true, floatBarOrientation: "vertical" }));
+    await waitFor(() => expect(container.querySelector(".floatbar__pill")).toBeInTheDocument());
+    expect(container.querySelector(".floatbar")).toHaveClass("floatbar--horizontal");
+    expect(container.querySelector(".floatbar__handle")).not.toBeInTheDocument();
+    expect(container.querySelector("[data-tauri-drag-region]")).not.toBeInTheDocument();
+    fireEvent.mouseDown(container.querySelector(".floatbar__quota-row")!, { button: 0 });
+    expect(windowMocks.startDragging).not.toHaveBeenCalled();
+  });
+
+  it("keeps the floating style draggable even when docking is saved for taskbar style", async () => {
+    const { container } = renderFloatBar(bootstrap({ floatBarStyle: "floating", floatBarTaskbarDocked: true, floatBarOrientation: "vertical" }));
+    await waitFor(() => expect(container.querySelector(".floatbar")).toHaveClass("floatbar--vertical"));
+    fireEvent.mouseDown(container.querySelector(".floatbar__handle")!, { button: 0 });
+    expect(windowMocks.startDragging).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { remaining: 100, color: "rgb(66, 240, 66)" },
+    { remaining: 75, color: "rgb(153, 240, 66)" },
+    { remaining: 50, color: "rgb(240, 240, 66)" },
+    { remaining: 25, color: "rgb(240, 153, 66)" },
+    { remaining: 0, color: "rgb(240, 66, 66)" },
+  ])("colors $remaining% remaining continuously instead of using warning thresholds", async ({ remaining, color }) => {
+    const provider = snapshot("codex", "Codex", 100 - remaining);
+    provider.primary.windowMinutes = 300;
+    tauriMocks.getCachedProviders.mockResolvedValue([provider]);
+    const { container } = renderFloatBar(bootstrap({ floatBarStyle: "taskbar", showAsUsed: true }));
+    await waitFor(() => {
+      expect(container.querySelector<HTMLElement>('[aria-label="5h remaining"]')?.style.color).toBe(color);
+      expect(container.querySelector<HTMLElement>('[aria-label="Weekly remaining"]')?.style.color).toBe("");
+    });
+  });
+
+  it("colors the session and weekly taskbar rows independently", async () => {
+    const provider = snapshot("antigravity", "Antigravity", 0, { secondary: { used: 100 } });
+    provider.primary.windowMinutes = 300;
+    provider.secondary!.windowMinutes = 7 * 24 * 60;
+    tauriMocks.getCachedProviders.mockResolvedValue([provider]);
+    const { container } = renderFloatBar(bootstrap({ floatBarStyle: "taskbar", enabledProviders: ["antigravity"] }));
+    await waitFor(() => {
+      expect(container.querySelector<HTMLElement>('[aria-label="5h remaining"]')?.style.color).toBe("rgb(66, 240, 66)");
+      expect(container.querySelector<HTMLElement>('[aria-label="Weekly remaining"]')?.style.color).toBe("rgb(240, 66, 66)");
+    });
+  });
+
+  it("removes gradient colors immediately when disabled in settings", async () => {
+    const provider = snapshot("codex", "Codex", 25);
+    provider.primary.windowMinutes = 300;
+    tauriMocks.getCachedProviders.mockResolvedValue([provider]);
+    tauriMocks.getSettingsSnapshot.mockResolvedValue(settings({ floatBarStyle: "taskbar", floatBarColorGradient: false }));
+    const { container } = renderFloatBar(bootstrap({ floatBarStyle: "taskbar" }));
+    await waitFor(() => expect(container.querySelector<HTMLElement>('[aria-label="5h remaining"]')?.style.color).toBe("rgb(153, 240, 66)"));
+    await act(async () => {
+      eventMocks.listen.mock.calls.find(([name]) => name === "float-bar-config-changed")?.[1]({ payload: null });
+    });
+    await waitFor(() => expect(container.querySelector<HTMLElement>('[aria-label="5h remaining"]')?.style.color).toBe(""));
   });
 
   it("resizes taskbar text and its logo when the saved font size changes", async () => {

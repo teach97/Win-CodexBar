@@ -289,6 +289,14 @@ pub(super) struct RawSettings {
     float_bar_scale: u8,
     #[serde(default = "default_float_bar_font_size")]
     float_bar_font_size: u8,
+    #[serde(default = "default_true")]
+    float_bar_color_gradient: bool,
+    #[serde(default)]
+    float_bar_taskbar_docked: bool,
+    #[serde(default)]
+    float_bar_taskbar_monitor: String,
+    #[serde(default = "default_float_bar_taskbar_position")]
+    float_bar_taskbar_position: u8,
     #[serde(default = "default_float_bar_orientation")]
     float_bar_orientation: String,
     #[serde(default = "default_float_bar_style")]
@@ -437,6 +445,10 @@ impl Default for RawSettings {
             float_bar_opacity: s.float_bar_opacity,
             float_bar_scale: s.float_bar_scale,
             float_bar_font_size: s.float_bar_font_size,
+            float_bar_color_gradient: s.float_bar_color_gradient,
+            float_bar_taskbar_docked: s.float_bar_taskbar_docked,
+            float_bar_taskbar_monitor: s.float_bar_taskbar_monitor,
+            float_bar_taskbar_position: s.float_bar_taskbar_position,
             float_bar_orientation: s.float_bar_orientation,
             float_bar_style: s.float_bar_style,
             float_bar_click_through: s.float_bar_click_through,
@@ -791,6 +803,10 @@ impl From<RawSettings> for Settings {
             float_bar_opacity: clamp_float_bar_opacity(raw.float_bar_opacity),
             float_bar_scale: clamp_float_bar_scale(raw.float_bar_scale),
             float_bar_font_size: clamp_float_bar_font_size(raw.float_bar_font_size),
+            float_bar_color_gradient: raw.float_bar_color_gradient,
+            float_bar_taskbar_docked: raw.float_bar_taskbar_docked,
+            float_bar_taskbar_monitor: raw.float_bar_taskbar_monitor,
+            float_bar_taskbar_position: raw.float_bar_taskbar_position.min(100),
             float_bar_orientation: normalize_float_bar_orientation(&raw.float_bar_orientation),
             float_bar_style: normalize_float_bar_style(&raw.float_bar_style),
             float_bar_click_through: raw.float_bar_click_through,

@@ -15,6 +15,18 @@ export function resizeFloatBar(width: number, height: number): Promise<void> {
   return invoke<void>("resize_float_bar", { width, height });
 }
 
+export interface FloatBarTaskbar {
+  id: string;
+  name: string;
+  primary: boolean;
+  width: number;
+  height: number;
+}
+
+export function getFloatBarTaskbars(): Promise<FloatBarTaskbar[]> {
+  return invoke<FloatBarTaskbar[]>("get_float_bar_taskbars");
+}
+
 /** Window label used by the floatbar webview. */
 export const FLOATBAR_WINDOW_LABEL = "floatbar";
 

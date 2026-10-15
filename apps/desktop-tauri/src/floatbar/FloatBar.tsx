@@ -151,12 +151,14 @@ function CostPill({
   todayLabel,
   periodLabel,
   estimateLabel,
+  canDrag,
 }: {
   summary: FloatBarCostSummary;
   scale: number;
   todayLabel: string;
   periodLabel: string;
   estimateLabel: string;
+  canDrag: boolean;
 }) {
   const { format } = useCurrency();
   const today = summary.todayCost == null ? null : format(summary.todayCost, "USD");
@@ -174,35 +176,35 @@ function CostPill({
     <div
       className="floatbar__cost-pill"
       title={`${summary.displayName}: ${title} (${estimateLabel})`}
-      data-tauri-drag-region
+      data-tauri-drag-region={canDrag || undefined}
       style={brandStyle(brand)}
     >
-      <span className="floatbar__provider-icon" data-tauri-drag-region>
+      <span className="floatbar__provider-icon" data-tauri-drag-region={canDrag || undefined}>
         <ProviderIcon providerId={summary.providerId} size={iconSize} />
       </span>
-      <span className="floatbar__cost-items" data-tauri-drag-region>
+      <span className="floatbar__cost-items" data-tauri-drag-region={canDrag || undefined}>
         {today && (
-          <span className="floatbar__cost-item" data-tauri-drag-region>
-            <span className="floatbar__cost-label" data-tauri-drag-region>
+          <span className="floatbar__cost-item" data-tauri-drag-region={canDrag || undefined}>
+            <span className="floatbar__cost-label" data-tauri-drag-region={canDrag || undefined}>
               {todayLabel}
             </span>
-            <span className="floatbar__cost-value" data-tauri-drag-region>
+            <span className="floatbar__cost-value" data-tauri-drag-region={canDrag || undefined}>
               {today}
             </span>
           </span>
         )}
         {periodCost && (
-          <span className="floatbar__cost-item" data-tauri-drag-region>
-            <span className="floatbar__cost-label" data-tauri-drag-region>
+          <span className="floatbar__cost-item" data-tauri-drag-region={canDrag || undefined}>
+            <span className="floatbar__cost-label" data-tauri-drag-region={canDrag || undefined}>
               {periodLabel}
             </span>
-            <span className="floatbar__cost-value" data-tauri-drag-region>
+            <span className="floatbar__cost-value" data-tauri-drag-region={canDrag || undefined}>
               {periodCost}
             </span>
           </span>
         )}
       </span>
-      <span className="floatbar__cost-estimate" data-tauri-drag-region>
+      <span className="floatbar__cost-estimate" data-tauri-drag-region={canDrag || undefined}>
         {estimateLabel}
       </span>
     </div>
@@ -236,6 +238,7 @@ function ProviderPill({
   usedSuffix,
   remainingSuffix,
   stateLabel,
+  canDrag,
 }: {
   provider: ProviderUsageSnapshot;
   thresholds: QuotaWarningSettings;
@@ -246,6 +249,7 @@ function ProviderPill({
   usedSuffix: string;
   remainingSuffix: string;
   stateLabel: string;
+  canDrag: boolean;
 }) {
   const { t } = useLocale();
   const rateWindow = provider.selectedMetric;
@@ -311,14 +315,14 @@ function ProviderPill({
             ? `${provider.displayName}: ${infoText}${resetSuffix}`
             : `${provider.displayName}: ${label} ${displaySuffix}${resetSuffix}${detailSuffix}`
       }
-      data-tauri-drag-region
+      data-tauri-drag-region={canDrag || undefined}
       style={brandStyle(brand)}
     >
-      <span className="floatbar__provider-icon" data-tauri-drag-region>
+      <span className="floatbar__provider-icon" data-tauri-drag-region={canDrag || undefined}>
         <ProviderIcon providerId={provider.providerId} size={iconSize} />
       </span>
-      <span className="floatbar__text" data-tauri-drag-region>
-        <span className="floatbar__pct" aria-label={state.isProblem ? stateLabel : undefined} data-tauri-drag-region>
+      <span className="floatbar__text" data-tauri-drag-region={canDrag || undefined}>
+        <span className="floatbar__pct" aria-label={state.isProblem ? stateLabel : undefined} data-tauri-drag-region={canDrag || undefined}>
           {state.isProblem ? (
             <>
               <span aria-hidden="true" style={{ visibility: "hidden" }}>{lastPercentageLabel.current}</span>
@@ -331,10 +335,10 @@ function ProviderPill({
             className="floatbar__reset"
             title={resetText}
             aria-label={resetText}
-            data-tauri-drag-region
+            data-tauri-drag-region={canDrag || undefined}
           >
             <ResetIcon size={resetIconSize} />
-            <span className="floatbar__reset-time" data-tauri-drag-region>
+            <span className="floatbar__reset-time" data-tauri-drag-region={canDrag || undefined}>
               {inlineReset}
             </span>
           </span>
@@ -356,10 +360,6 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
   const { providers } = useProviders({
     refreshOnMount: false,
   });
-  const startDrag = useCallback((event: MouseEvent<HTMLElement>) => {
-    if (event.button !== 0) return;
-    void getCurrentWindow().startDragging().catch(() => {});
-  }, []);
 
   // Mark the body so our CSS can strip the dark theme background — the
   // floatbar window is meant to be fully transparent around the pills.
@@ -378,6 +378,11 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
     setSettingsSeed(state.settings);
     setSettings(state.settings);
   }
+  const docked = settings.floatBarStyle === "taskbar" && settings.floatBarTaskbarDocked;
+  const startDrag = useCallback((event: MouseEvent<HTMLElement>) => {
+    if (docked || event.button !== 0) return;
+    void getCurrentWindow().startDragging().catch(() => {});
+  }, [docked]);
   const [localCosts, setLocalCosts] = useState<Record<string, FloatBarCostSummary>>({});
 
   // The detached floatbar should keep usage fresh, but it must not open or
@@ -408,7 +413,7 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
 
   // Orientation flips re-lay-out the bar without recreating the window.
   const orientation: "horizontal" | "vertical" =
-    settings.floatBarOrientation === "vertical" ? "vertical" : "horizontal";
+    !docked && settings.floatBarOrientation === "vertical" ? "vertical" : "horizontal";
   const style = settings.floatBarStyle === "taskbar" ? "taskbar" : "floating";
   const filterIds = settings.floatBarProviderIds;
   const scale = Math.max(0.75, Math.min(2, settings.floatBarScale / 100));
@@ -527,6 +532,7 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
     visibleCostValuesKey,
     orientation,
     style,
+    docked,
     scale,
     fontSize,
     showResetInline,
@@ -563,20 +569,21 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
       role="button"
       tabIndex={-1}
       aria-label={t("AppName")}
-      className={`floatbar floatbar--${orientation} floatbar--${style}${settings.floatBarDarkText ? " floatbar--light-bg" : ""}`}
-      data-tauri-drag-region
+      className={`floatbar floatbar--${orientation} floatbar--${style}${docked ? " floatbar--docked" : ""}${settings.floatBarDarkText ? " floatbar--light-bg" : ""}`}
+      data-tauri-drag-region={!docked || undefined}
       onMouseDown={startDrag}
       style={
         {
           opacity: opacityFraction,
+          cursor: docked ? "default" : undefined,
           "--floatbar-scale": scale,
           "--floatbar-font-size": `${fontSize}px`,
         } as CSSProperties
       }
     >
-      <div className="floatbar__handle" data-tauri-drag-region aria-hidden />
+      {!docked && <div className="floatbar__handle" data-tauri-drag-region aria-hidden />}
       {visible.length === 0 ? (
-        <div className="floatbar__empty" data-tauri-drag-region>
+        <div className="floatbar__empty" data-tauri-drag-region={!docked || undefined}>
           {t("FloatBarNoProviders")}
         </div>
       ) : (
@@ -589,9 +596,10 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
               <TaskbarQuotaPill
                 key={providerCostKey(p)}
                 provider={p}
-                thresholds={settings}
                 scale={scale}
                 fontSize={fontSize}
+                colorGradient={settings.floatBarColorGradient ?? true}
+                canDrag={!docked}
                 style={brandStyle(getProviderIcon(p.providerId).brandColor)}
               />
             ) : (
@@ -606,6 +614,7 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
                 usedSuffix={t("PanelUsedSuffix")}
                 remainingSuffix={t("FloatBarRemainingSuffix")}
                 stateLabel={t(describeProviderState(p.errorState).labelKey)}
+                canDrag={!docked}
               />
             )
           ))}
@@ -617,6 +626,7 @@ export default function FloatBar({ state }: { state: BootstrapState }) {
               todayLabel={t("PanelToday")}
               periodLabel={costPeriodShortLabel(summary.period, t)}
               estimateLabel={t("OverviewSpendEstimate")}
+              canDrag={!docked}
             />
           ))}
         </>

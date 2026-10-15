@@ -106,6 +106,26 @@ the selected tray metric or the global used/remaining preference. Hover for
 period labels. A missing or informational quota is shown as `—`; an unavailable
 provider shows `!` with its status in the tooltip.
 
+Each remaining-quota row uses a continuous green (100%) → yellow (50%) → red
+(0%) color scale. The five-hour and weekly rows are colored independently;
+missing quotas retain the normal text color.
+**Remaining quota color gradient** enables this coloring by default. Disable
+it to restore the normal text color. The setting applies immediately, persists
+after restart, and is included in preferences export/import.
+
+**Attach to taskbar** embeds the taskbar-style widget inside the Windows
+taskbar so it follows the taskbar when full-screen applications hide it.
+**Taskbar monitor** selects a detected display; **Primary monitor** follows
+the current primary display. A disconnected saved display remains listed
+until another choice is selected. **Taskbar position** moves the widget from
+the left (0%) to the right (100%) of the available taskbar span. Docked bars
+use a horizontal layout and their position is controlled by this slider.
+Choose unused space away from app icons to avoid overlap. Docked text and
+logos are limited to the taskbar height.
+Turning attachment off restores the draggable floating window. Placement
+settings persist after restart. Attachment and position are included in
+preferences export/import; the monitor device ID stays on the local machine.
+
 ## Provider switcher keys
 
 The tray flyout switches providers from the keyboard (ported from upstream 0.67.0; the shortcuts are menu-local, not global hotkeys):

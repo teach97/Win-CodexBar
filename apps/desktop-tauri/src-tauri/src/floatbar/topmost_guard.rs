@@ -90,10 +90,31 @@ mod platform {
 
     fn reassert_if_needed(app: &tauri::AppHandle) {
         let Some(floatbar) = app.get_webview_window(FLOATBAR_LABEL) else {
+            if super::super::taskbar::is_docked() {
+                if super::super::taskbar::list().is_empty() {
+                    return;
+                }
+                let settings = codexbar::settings::Settings::load();
+                if settings.float_bar_enabled && settings.float_bar_taskbar_docked {
+                    let _ = window::show(
+                        app,
+                        settings.float_bar_opacity,
+                        &settings.float_bar_orientation,
+                        &settings.float_bar_style,
+                        settings.float_bar_click_through,
+                    );
+                    return;
+                }
+                super::super::taskbar::stop();
+            }
             // Webview gone without hide — stop the guard.
             FLOATBAR_ACTIVE.store(false, Ordering::Release);
             return;
         };
+        if super::super::taskbar::is_docked() {
+            let _ = super::super::taskbar::refresh(&floatbar);
+            return;
+        }
         if !floatbar.is_visible().unwrap_or(false) {
             return;
         }

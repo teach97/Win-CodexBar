@@ -92,6 +92,10 @@ pub struct SettingsUpdate {
     pub float_bar_opacity: Option<u8>,
     pub float_bar_scale: Option<u8>,
     pub float_bar_font_size: Option<u8>,
+    pub float_bar_color_gradient: Option<bool>,
+    pub float_bar_taskbar_docked: Option<bool>,
+    pub float_bar_taskbar_monitor: Option<String>,
+    pub float_bar_taskbar_position: Option<u8>,
     pub float_bar_orientation: Option<String>,
     pub float_bar_style: Option<String>,
     pub float_bar_click_through: Option<bool>,
@@ -559,6 +563,10 @@ impl SettingsUpdate {
             opacity: self.float_bar_opacity,
             scale: self.float_bar_scale,
             font_size: self.float_bar_font_size,
+            color_gradient: self.float_bar_color_gradient,
+            docked: self.float_bar_taskbar_docked,
+            monitor: self.float_bar_taskbar_monitor.clone(),
+            position: self.float_bar_taskbar_position,
             orientation: self.float_bar_orientation.clone(),
             style: self.float_bar_style.clone(),
             click_through: self.float_bar_click_through,
@@ -784,6 +792,21 @@ pub async fn update_settings(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn taskbar_docking_update_crosses_the_bridge_without_refreshing_provider_data() {
+        let update: SettingsUpdate = serde_json::from_value(serde_json::json!({
+            "floatBarTaskbarDocked": true,
+            "floatBarTaskbarMonitor": r"\\.\DISPLAY2",
+            "floatBarTaskbarPosition": 72,
+        }))
+        .expect("deserialize docking update");
+        assert!(!update.refreshes_provider_data());
+        let patch = update.float_bar_patch();
+        assert_eq!(patch.docked, Some(true));
+        assert_eq!(patch.monitor.as_deref(), Some(r"\\.\DISPLAY2"));
+        assert_eq!(patch.position, Some(72));
+    }
 
     #[test]
     fn preferred_currency_patch_accepts_supported_codes_and_rejects_unknown_codes() {

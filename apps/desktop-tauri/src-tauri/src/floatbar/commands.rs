@@ -10,6 +10,11 @@ use tauri::{AppHandle, Manager};
 use super::window as floatbar_window;
 
 #[tauri::command]
+pub fn get_float_bar_taskbars() -> Vec<super::taskbar::TaskbarSnapshot> {
+    super::taskbar::list()
+}
+
+#[tauri::command]
 pub async fn show_float_bar(app: AppHandle) -> Result<(), String> {
     let mut settings = Settings::load();
     settings.float_bar_enabled = true;

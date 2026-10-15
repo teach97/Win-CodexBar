@@ -7,6 +7,7 @@
 
 mod commands;
 mod placement;
+mod taskbar;
 mod topmost_guard;
 mod window;
 
@@ -47,6 +48,9 @@ pub fn handle_window_event(window: &tauri::Window, event: &tauri::WindowEvent) -
     }
     match event {
         tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) => {
+            if taskbar::is_docked() {
+                return true;
+            }
             // Probe first (no I/O). Load style only when recovery runs.
             // Always reassert topmost on geometry change; the visibility-scoped
             // topmost_guard timer stays overlap-gated.
@@ -66,7 +70,8 @@ pub fn handle_window_event(window: &tauri::Window, event: &tauri::WindowEvent) -
         }
         tauri::WindowEvent::CloseRequested { .. } => window::remember_user_geometry(window),
         tauri::WindowEvent::Destroyed => {
-            topmost_guard::set_active(false);
+            taskbar::forget_window();
+            topmost_guard::set_active(taskbar::is_docked());
             placement::with_tracker(placement::PlacementTracker::reset);
         }
         _ => {}
@@ -115,6 +120,31 @@ pub fn apply_state(app: &tauri::AppHandle, settings: &Settings) {
     } else if !settings.float_bar_enabled && open {
         let _hide = window::hide(app);
     } else if let Some(w) = app.get_webview_window(FLOATBAR_LABEL) {
+        let was_docked = taskbar::is_docked();
+        if let Err(error) = taskbar::apply(&w, settings) {
+            tracing::warn!(%error, "failed to dock floatbar into the taskbar");
+            let _ = w.hide();
+            return;
+        }
+        if taskbar::is_docked() {
+            window::apply_opacity(&w, settings.float_bar_opacity);
+            window::apply_click_through(&w, settings.float_bar_click_through);
+            window::apply_no_activate(&w);
+            topmost_guard::set_active(true);
+            return;
+        }
+        if was_docked {
+            // Reparenting may hide the HWND while Tauri still caches it as visible.
+            let _ = w.hide();
+            let _ = window::show(
+                app,
+                settings.float_bar_opacity,
+                &settings.float_bar_orientation,
+                &settings.float_bar_style,
+                settings.float_bar_click_through,
+            );
+            return;
+        }
         let _ensure_visible =
             window::ensure_visible_on_active_monitor(&w, &settings.float_bar_style);
         window::apply_opacity(&w, settings.float_bar_opacity);
@@ -134,6 +164,10 @@ pub struct SettingsPatch {
     pub opacity: Option<u8>,
     pub scale: Option<u8>,
     pub font_size: Option<u8>,
+    pub color_gradient: Option<bool>,
+    pub docked: Option<bool>,
+    pub monitor: Option<String>,
+    pub position: Option<u8>,
     pub orientation: Option<String>,
     pub style: Option<String>,
     pub click_through: Option<bool>,
@@ -149,6 +183,10 @@ impl SettingsPatch {
             && self.opacity.is_none()
             && self.scale.is_none()
             && self.font_size.is_none()
+            && self.color_gradient.is_none()
+            && self.docked.is_none()
+            && self.monitor.is_none()
+            && self.position.is_none()
             && self.orientation.is_none()
             && self.style.is_none()
             && self.click_through.is_none()
@@ -172,6 +210,18 @@ impl SettingsPatch {
         }
         if let Some(v) = self.font_size {
             settings.float_bar_font_size = codexbar::settings::clamp_float_bar_font_size(v);
+        }
+        if let Some(v) = self.color_gradient {
+            settings.float_bar_color_gradient = v;
+        }
+        if let Some(v) = self.docked {
+            settings.float_bar_taskbar_docked = v;
+        }
+        if let Some(v) = &self.monitor {
+            settings.float_bar_taskbar_monitor = v.clone();
+        }
+        if let Some(v) = self.position {
+            settings.float_bar_taskbar_position = v.min(100);
         }
         if let Some(v) = &self.orientation {
             settings.float_bar_orientation = codexbar::settings::normalize_float_bar_orientation(v);
@@ -228,6 +278,43 @@ mod tests {
     }
 
     #[test]
+    fn gradient_only_patch_triggers_live_configuration_update() {
+        let patch = SettingsPatch {
+            color_gradient: Some(false),
+            ..SettingsPatch::default()
+        };
+        assert!(!patch.is_empty());
+        let mut settings = Settings::default();
+        patch.apply(&mut settings);
+        assert!(!settings.float_bar_color_gradient);
+    }
+
+    #[test]
+    fn docking_fields_trigger_live_updates_and_clamp_position() {
+        let mut settings = Settings::default();
+        for patch in [
+            SettingsPatch {
+                docked: Some(true),
+                ..SettingsPatch::default()
+            },
+            SettingsPatch {
+                monitor: Some(r"\\.\DISPLAY2".into()),
+                ..SettingsPatch::default()
+            },
+            SettingsPatch {
+                position: Some(255),
+                ..SettingsPatch::default()
+            },
+        ] {
+            assert!(!patch.is_empty());
+            patch.apply(&mut settings);
+        }
+        assert!(settings.float_bar_taskbar_docked);
+        assert_eq!(settings.float_bar_taskbar_monitor, r"\\.\DISPLAY2");
+        assert_eq!(settings.float_bar_taskbar_position, 100);
+    }
+
+    #[test]
     fn settings_patch_apply_only_writes_present_fields() {
         let mut s = Settings {
             float_bar_enabled: false,
@@ -245,6 +332,7 @@ mod tests {
             opacity: Some(45),
             scale: Some(135),
             font_size: Some(18),
+            color_gradient: Some(false),
             style: Some("taskbar".into()),
             dark_text: Some(true),
             show_reset_inline: Some(true),
@@ -255,6 +343,7 @@ mod tests {
         assert_eq!(s.float_bar_opacity, 45);
         assert_eq!(s.float_bar_scale, 135);
         assert_eq!(s.float_bar_font_size, 18);
+        assert!(!s.float_bar_color_gradient);
         assert_eq!(s.float_bar_style, "taskbar");
         assert!(s.float_bar_dark_text);
         assert!(s.float_bar_show_reset_inline);
@@ -290,6 +379,10 @@ mod tests {
         assert_eq!(s.float_bar_opacity, original.float_bar_opacity);
         assert_eq!(s.float_bar_scale, original.float_bar_scale);
         assert_eq!(s.float_bar_font_size, original.float_bar_font_size);
+        assert_eq!(
+            s.float_bar_color_gradient,
+            original.float_bar_color_gradient
+        );
         assert_eq!(s.float_bar_orientation, original.float_bar_orientation);
         assert_eq!(s.float_bar_style, original.float_bar_style);
         assert_eq!(s.float_bar_dark_text, original.float_bar_dark_text);
