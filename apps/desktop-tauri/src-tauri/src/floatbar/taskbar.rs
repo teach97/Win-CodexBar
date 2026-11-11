@@ -206,7 +206,17 @@ mod platform {
         on_main_thread(window, refresh_on_main_thread)
     }
 
+    /// Apply a new content width in one native move, keeping the taskbar height.
+    pub fn resize(window: &tauri::WebviewWindow, width: u32) -> Result<(), String> {
+        let width = i32::try_from(width).unwrap_or(i32::MAX);
+        on_main_thread(window, move |window| place(window, Some(width)))
+    }
+
     fn refresh_on_main_thread(window: &tauri::WebviewWindow) -> Result<(), String> {
+        place(window, None)
+    }
+
+    fn place(window: &tauri::WebviewWindow, width: Option<i32>) -> Result<(), String> {
         let config = CONFIG.lock().unwrap_or_else(|e| e.into_inner()).clone();
         let Some(config) = config else { return Ok(()) };
         let bars = taskbars();
@@ -227,7 +237,9 @@ mod platform {
         }
         let available_width = (client.right - client.left).max(1);
         let available_height = (client.bottom - client.top).max(1);
-        let width = (bounds.right - bounds.left).clamp(1, available_width);
+        let width = width
+            .unwrap_or(bounds.right - bounds.left)
+            .clamp(1, available_width);
         let x = horizontal_position(available_width, width, config.position);
         let mut attach = false;
         // SAFETY: All operations target our FloatBar HWND; the shell HWND is only
@@ -460,7 +472,7 @@ mod platform {
 }
 
 #[cfg(windows)]
-pub use platform::{apply, forget_window, is_docked, list, refresh, stop};
+pub use platform::{apply, forget_window, is_docked, list, refresh, resize, stop};
 
 #[cfg(not(windows))]
 pub fn list() -> Vec<TaskbarSnapshot> {
@@ -480,6 +492,10 @@ pub fn apply(_: &tauri::WebviewWindow, _: &Settings) -> Result<(), String> {
 }
 #[cfg(not(windows))]
 pub fn refresh(_: &tauri::WebviewWindow) -> Result<(), String> {
+    Ok(())
+}
+#[cfg(not(windows))]
+pub fn resize(_: &tauri::WebviewWindow, _: u32) -> Result<(), String> {
     Ok(())
 }
 

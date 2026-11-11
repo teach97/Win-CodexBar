@@ -549,15 +549,20 @@ pub fn resize(
     let width = width.ceil().clamp(1.0, u32::MAX as f64) as u32;
     let height = height.ceil().clamp(1.0, u32::MAX as f64) as u32;
 
+    if super::taskbar::is_docked() {
+        // The taskbar owns the docked height. Resizing to the content height
+        // first would briefly shrink the viewport that sizes the docked text,
+        // which re-triggers this resize and makes the widget flicker.
+        super::taskbar::resize(window, width)?;
+        apply_no_activate(window);
+        apply_click_through(window, click_through);
+        return Ok(());
+    }
     window
         .set_size(PhysicalSize::new(width, height))
         .map_err(|e| e.to_string())?;
     apply_no_activate(window);
     apply_click_through(window, click_through);
-    if super::taskbar::is_docked() {
-        super::taskbar::refresh(window)?;
-        return Ok(());
-    }
     apply_always_on_top(window);
     Ok(())
 }
