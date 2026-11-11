@@ -81,6 +81,10 @@ mod platform {
     const SWP_FRAMECHANGED: u32 = 0x0020;
     const SWP_NOSIZE: u32 = 0x0001;
     const SWP_NOZORDER: u32 = 0x0004;
+    const SWP_NOMOVE: u32 = 0x0002;
+    const WS_VISIBLE: isize = 0x1000_0000;
+    const GW_HWNDNEXT: u32 = 2;
+    const GW_CHILD: u32 = 5;
 
     fn wide(value: &str) -> Vec<u16> {
         value.encode_utf16().chain(std::iter::once(0)).collect()
@@ -311,8 +315,50 @@ mod platform {
             {
                 return Err(std::io::Error::last_os_error().to_string());
             }
+            raise_if_covered(bar.hwnd, child);
         }
         Ok(())
+    }
+
+    /// Raise the widget when a visible window of the taskbar's own process
+    /// covers it.
+    ///
+    /// Explorer can raise its full-width taskbar content above our child on its
+    /// own. The widget then stays docked and visible to Win32 but is painted
+    /// over. Windows of other processes are left alone so two taskbar widgets
+    /// never fight over the z-order.
+    ///
+    /// # Safety
+    /// `parent` and `child` must be window handles; they are only queried and
+    /// `child` is the only window reordered.
+    unsafe fn raise_if_covered(parent: isize, child: isize) -> bool {
+        unsafe {
+            let mut ours = Rect::default();
+            if GetWindowRect(child, &mut ours) == 0 {
+                return false;
+            }
+            let mut shell = 0;
+            GetWindowThreadProcessId(parent, &mut shell);
+            let mut sibling = GetWindow(parent, GW_CHILD);
+            while sibling != 0 && sibling != child {
+                let mut owner = 0;
+                GetWindowThreadProcessId(sibling, &mut owner);
+                let mut bounds = Rect::default();
+                if owner == shell
+                    && GetWindowLongPtrW(sibling, GWL_STYLE) & WS_VISIBLE != 0
+                    && GetWindowRect(sibling, &mut bounds) != 0
+                    && bounds.left < ours.right
+                    && bounds.right > ours.left
+                    && bounds.top < ours.bottom
+                    && bounds.bottom > ours.top
+                {
+                    let flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE;
+                    return SetWindowPos(child, 0, 0, 0, 0, 0, flags) != 0;
+                }
+                sibling = GetWindow(sibling, GW_HWNDNEXT);
+            }
+            false
+        }
     }
 
     fn detach(window: &tauri::WebviewWindow) -> Result<(), String> {
@@ -360,6 +406,97 @@ mod platform {
     #[cfg(test)]
     mod tests {
         use super::*;
+
+        /// Invisible parent with our widget and one shell sibling stacked above it.
+        unsafe fn covered_widget(cover_x: i32) -> (isize, isize, isize) {
+            let class = wide("STATIC");
+            let parent = unsafe {
+                CreateWindowExW(
+                    0,
+                    class.as_ptr(),
+                    std::ptr::null(),
+                    WS_POPUP as u32,
+                    -10000,
+                    -10000,
+                    400,
+                    48,
+                    0,
+                    0,
+                    0,
+                    std::ptr::null(),
+                )
+            };
+            let child = |x: i32, width: i32| unsafe {
+                CreateWindowExW(
+                    0,
+                    class.as_ptr(),
+                    std::ptr::null(),
+                    (WS_CHILD | WS_VISIBLE) as u32,
+                    x,
+                    0,
+                    width,
+                    48,
+                    parent,
+                    0,
+                    0,
+                    std::ptr::null(),
+                )
+            };
+            let widget = child(0, 100);
+            let cover = child(cover_x, 200);
+            assert!(parent != 0 && widget != 0 && cover != 0);
+            // SAFETY: Both are children of the test-owned parent.
+            unsafe {
+                SetWindowPos(
+                    widget,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+                );
+                SetWindowPos(
+                    cover,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+                );
+                assert_eq!(GetWindow(parent, GW_CHILD), cover);
+            }
+            (parent, widget, cover)
+        }
+
+        #[test]
+        fn a_widget_covered_by_shell_content_is_raised_above_it() {
+            // SAFETY: Invisible test-owned windows only; no shell window is modified.
+            unsafe {
+                let (parent, widget, cover) = covered_widget(0);
+                let raised = raise_if_covered(parent, widget);
+                let top = GetWindow(parent, GW_CHILD);
+                DestroyWindow(parent);
+                assert!(raised);
+                assert_eq!(top, widget);
+                let _ = cover;
+            }
+        }
+
+        #[test]
+        fn a_widget_beside_shell_content_keeps_its_z_order() {
+            // SAFETY: Invisible test-owned windows only; no shell window is modified.
+            unsafe {
+                let (parent, widget, cover) = covered_widget(150);
+                let raised = raise_if_covered(parent, widget);
+                let top = GetWindow(parent, GW_CHILD);
+                DestroyWindow(parent);
+                assert!(!raised);
+                assert_eq!(top, cover);
+                let _ = widget;
+            }
+        }
 
         #[test]
         fn detaching_a_child_restores_its_top_level_parent_and_style() {
@@ -452,6 +589,8 @@ mod platform {
         fn GetWindowLongPtrW(hwnd: isize, index: i32) -> isize;
         fn SetWindowLongPtrW(hwnd: isize, index: i32, value: isize) -> isize;
         fn GetParent(hwnd: isize) -> isize;
+        fn GetWindow(hwnd: isize, command: u32) -> isize;
+        fn GetWindowThreadProcessId(hwnd: isize, process: *mut u32) -> u32;
         fn SetParent(hwnd: isize, parent: isize) -> isize;
         fn GetWindowDpiAwarenessContext(hwnd: isize) -> *mut c_void;
         fn AreDpiAwarenessContextsEqual(first: *mut c_void, second: *mut c_void) -> i32;
