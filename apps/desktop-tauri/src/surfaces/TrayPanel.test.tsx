@@ -70,6 +70,7 @@ import TrayPanel from "./TrayPanel";
 import { LocaleProvider } from "../i18n/LocaleProvider";
 import { TEST_PROVIDER_CATALOG } from "../test/providerCatalog";
 import { buildBundle } from "../test/localeHarness";
+import { loadStyles, ruleBlock } from "../test/styles";
 import type {
   BootstrapState,
   ProviderCatalogEntry,
@@ -378,6 +379,22 @@ describe("TrayPanel provider grid", () => {
     await waitFor(() => {
       expect(container.querySelector(".tray-panel-reveal--ready")).not.toBeNull();
     });
+  });
+
+  it("follows the app theme instead of forcing the light menu", async () => {
+    const { container } = renderTrayPanel([provider("claude", "Claude", 35)], { theme: "dark" });
+
+    await waitFor(() => {
+      expect(container.querySelector(".tray-panel-reveal")).not.toBeNull();
+    });
+    expect(container.querySelector("[data-theme]")).toBeNull();
+    const dark = ruleBlock(loadStyles(), '[data-theme="dark"] .menu-surface--tray');
+    expect(dark).toContain("--mac-text: rgba(255, 255, 255, 0.85);");
+    expect(dark).toContain("color-scheme: dark;");
+    expect(
+      ruleBlock(loadStyles(), '[data-theme="dark"] .menu-surface--tray .provider-grid__item .provider-icon'),
+    ).toContain("filter: brightness(0) invert(1);");
+    expect(ruleBlock(loadStyles(), ':root[data-theme="dark"]')).toContain("--mac-panel-bg: #2b2b2e;");
   });
 
   it("shows only included overview spend rows without an export button", async () => {

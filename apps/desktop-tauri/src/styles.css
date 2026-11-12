@@ -1025,6 +1025,9 @@ html {
 :root {
   --mac-panel-bg: #dedee2;
 }
+:root[data-theme="dark"] {
+  --mac-panel-bg: #2b2b2e;
+}
 html:has(.tray-panel-reveal),
 body:has(.tray-panel-reveal),
 .tray-panel-reveal {
@@ -3126,6 +3129,43 @@ html:has(.menu-surface--tray) {
   background: var(--mac-panel-bg);
   box-shadow: var(--mac-panel-highlight);
   color: var(--mac-text);
+}
+/* The macOS dark menu palette for the Dark app theme (Auto follows Windows). */
+[data-theme="dark"] .menu-surface--tray {
+  --mac-panel-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --mac-panel-border: rgba(0, 0, 0, 0.6);
+  --mac-text: rgba(255, 255, 255, 0.85);
+  --mac-text-2: rgba(255, 255, 255, 0.55);
+  --mac-text-3: rgba(255, 255, 255, 0.25);
+  --mac-track: rgba(255, 255, 255, 0.1);
+  --mac-divider: rgba(255, 255, 255, 0.15);
+  --mac-separator: rgba(255, 255, 255, 0.1);
+  --mac-error: #ff453a;
+  --mac-pace-ok: #30d158;
+  --mac-pace-bad: #ff453a;
+  --mac-marker: rgba(255, 255, 255, 0.6);
+  --mac-accent: #0a84ff;
+  --mac-metric-card-bg: rgba(255, 255, 255, 0.06);
+  --pace-slow-bg: rgba(10, 132, 255, 0.18);
+  --pace-slow-fg: #64b5ff;
+  --pace-steady-bg: rgba(48, 209, 88, 0.16);
+  --pace-steady-fg: #4ade80;
+  --pace-racing-bg: rgba(255, 159, 10, 0.18);
+  --pace-racing-fg: #fbbf24;
+  --pace-burning-bg: rgba(255, 69, 58, 0.18);
+  --pace-burning-fg: #f87171;
+  --pace-track-expected-fg: rgba(10, 132, 255, 0.55);
+  --chart-cost-fg: #0a84ff;
+  --surface-tint-rgb: 255, 255, 255;
+
+  color-scheme: dark;
+}
+[data-theme="dark"] .menu-surface--tray .provider-grid__item:hover {
+  background: rgba(255, 255, 255, 0.095);
+}
+/* Template icons are black on the light menu and white on the dark one. */
+[data-theme="dark"] .menu-surface--tray .provider-grid__item .provider-icon {
+  filter: brightness(0) invert(1);
 }
 .menu-surface--tray .menu-surface__body {
   flex: 0 1 auto;
