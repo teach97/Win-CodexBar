@@ -35,6 +35,7 @@ const model: InlineDashboardModel = {
     },
   ],
   detailLines: ["Top model: gpt-5", "Estimated from local logs"],
+  models: [],
 };
 
 describe("bar geometry", () => {
@@ -81,6 +82,21 @@ describe("InlineDashboard", () => {
     expect(bars[2]).toHaveClass("card-dash__bar--selected");
     fireEvent.mouseLeave(container.querySelector(".card-dash__chart")!);
     expect(scale).toHaveTextContent("$8");
+  });
+
+  it("lists the models under their heading", () => {
+    render(
+      <InlineDashboard
+        model={{
+          ...model,
+          modelsTitle: "Models · 30d",
+          models: [{ name: "claude-opus-5-5", value: "$30.00 · 9M" }],
+        }}
+      />,
+    );
+    expect(screen.getByText("Models · 30d")).toHaveClass("card-dash__caption");
+    expect(screen.getByText("claude-opus-5-5")).toHaveClass("card-dash__window-title");
+    expect(screen.getByText("$30.00 · 9M")).toHaveClass("card-dash__window-value");
   });
 
   it("omits the chart and windows when there are none", () => {

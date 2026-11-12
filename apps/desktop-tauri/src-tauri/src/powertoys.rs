@@ -249,6 +249,7 @@ mod tests {
                 estimate_note: "cached".to_string(),
                 token_cost_updated_at_ms: 1234,
                 incomplete_request_count: None,
+                models: Vec::new(),
             }),
         );
 

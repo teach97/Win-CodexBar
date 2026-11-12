@@ -1118,6 +1118,15 @@ export interface ProviderLocalUsageSummary {
   tokenCostUpdatedAtMs: number;
   /** Claude requests excluded from the selected-period totals (upstream 0.60.5 #3688). */
   incompleteRequestCount?: number;
+  /** Per-model cost and tokens over the selected History window, highest cost first. */
+  models?: LocalModelUsage[];
+}
+
+export interface LocalModelUsage {
+  model: string;
+  /** Null when the model has no known price. */
+  costUsd: number | null;
+  totalTokens: number;
 }
 
 export interface QuotaWindowHistoryPoint {

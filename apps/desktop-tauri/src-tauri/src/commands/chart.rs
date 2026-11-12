@@ -88,6 +88,18 @@ pub struct ProviderLocalUsageSummary {
     /// (`period_cost` / `period_tokens`). Omitted when zero or not applicable.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub incomplete_request_count: Option<u32>,
+    /// Per-model cost and tokens over the selected History window, highest cost first.
+    #[serde(default)]
+    pub models: Vec<LocalModelUsage>,
+}
+
+/// One model's local cost and tokens; `cost_usd` is `None` for an unpriced model.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalModelUsage {
+    pub model: String,
+    pub cost_usd: Option<f64>,
+    pub total_tokens: u64,
 }
 
 /// One display-only quota-window history row.  Completeness is tracked per
@@ -465,6 +477,9 @@ fn local_usage_summary_from_cost_summary(
         // The note sits under the selected-period totals, so count that window.
         incomplete_request_count: period_summary
             .and_then(|s| non_zero_u32(s.incomplete_request_count)),
+        models: period_summary
+            .map(|s| model_usage(provider_id, s))
+            .unwrap_or_default(),
     })
 }
 
@@ -557,6 +572,10 @@ fn load_local_usage_summary_with_unknown_models(
             incomplete_request_count: period_summary
                 .as_ref()
                 .and_then(|s| non_zero_u32(s.incomplete_request_count)),
+            models: period_summary
+                .as_ref()
+                .map(|s| model_usage(provider_id, s))
+                .unwrap_or_default(),
         }),
         unknown_models,
     )
@@ -600,6 +619,7 @@ fn muse_local_usage_summary(
         estimate_note: locale::get_text(lang, LocaleKey::PanelEstimatedFromLocalLogsMuse),
         token_cost_updated_at_ms: current_unix_ms(),
         incomplete_request_count: None,
+        models: Vec::new(),
     })
 }
 
@@ -871,6 +891,34 @@ fn non_zero_u64(value: u64) -> Option<u64> {
 
 fn non_zero_u32(value: u32) -> Option<u32> {
     (value > 0).then_some(value)
+}
+
+/// Models with cost or tokens, highest known cost first, then tokens, then name.
+fn model_usage(provider_id: &str, summary: &CostSummary) -> Vec<LocalModelUsage> {
+    let names: HashSet<&String> = summary
+        .by_model
+        .keys()
+        .chain(summary.by_model_tokens.keys())
+        .collect();
+    let mut models: Vec<LocalModelUsage> = names
+        .into_iter()
+        .map(|model| LocalModelUsage {
+            model: model.clone(),
+            cost_usd: summary.by_model.get(model).copied(),
+            total_tokens: summary
+                .by_model_tokens
+                .get(model)
+                .map_or(0, |counts| counts.total_for_provider(provider_id)),
+        })
+        .collect();
+    models.sort_by(|a, b| {
+        let cost = |row: &LocalModelUsage| row.cost_usd.unwrap_or(f64::NEG_INFINITY);
+        cost(b)
+            .total_cmp(&cost(a))
+            .then(b.total_tokens.cmp(&a.total_tokens))
+            .then_with(|| a.model.cmp(&b.model))
+    });
+    models
 }
 
 fn top_model(provider_id: &str, summary: &CostSummary) -> Option<String> {

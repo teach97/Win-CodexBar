@@ -27,6 +27,8 @@ const STRINGS: Partial<Record<LocaleKey, string>> = {
   IncompleteRequestsLabel: "Incomplete",
   IncompleteRequestsDetail: "{} requests had no final usage",
   UsageSpendTokens: "tokens",
+  UsageSpendModels: "Models",
+  UsageSpendUnpriced: "Unpriced",
 };
 const t = (key: LocaleKey) => STRINGS[key] ?? key;
 
@@ -224,6 +226,64 @@ describe("inlineDashboardModel", () => {
       { title: "Latest", value: "380K tokens", emphasis: true },
       { title: "30d tokens", value: "12.4M", emphasis: false },
     ]);
+  });
+
+  it("adds 7-day cost and tokens summed from the daily history", () => {
+    const model = inlineDashboardModel({
+      ...base,
+      costHistory: [{ date: "2026-10-04", value: 100 }, ...days],
+      tokensHistory: [
+        { date: "2026-10-04", tokens: 1_000_000 },
+        { date: "2026-10-05", tokens: 20_000 },
+        { date: "2026-10-11", tokens: 380_000 },
+      ],
+      now: new Date(2026, 9, 11, 12),
+      summary: summary(),
+      quotaHistory: null,
+    });
+    expect(model?.kpis.slice(4)).toEqual([
+      { title: "7d cost", value: "$10.00", emphasis: false },
+      { title: "7d tokens", value: "400K", emphasis: false },
+    ]);
+  });
+
+  it("does not repeat 7-day KPIs for a 7-day history", () => {
+    const model = inlineDashboardModel({
+      ...base,
+      now: new Date(2026, 9, 11, 12),
+      summary: summary({ reportingPeriod: "rolling:7" }),
+      quotaHistory: null,
+    });
+    expect(model?.kpis.map((kpi) => kpi.title)).toEqual([
+      "Today",
+      "7d cost",
+      "Latest tokens",
+      "7d tokens",
+    ]);
+  });
+
+  it("lists up to five models of the history window instead of the top model", () => {
+    const model = inlineDashboardModel({
+      ...base,
+      summary: summary({
+        models: [
+          { model: "claude-opus-5-5", costUsd: 30, totalTokens: 9_000_000 },
+          { model: "claude-haiku", costUsd: null, totalTokens: 1_200 },
+          { model: "m3", costUsd: 1, totalTokens: 10 },
+          { model: "m4", costUsd: 1, totalTokens: 10 },
+          { model: "m5", costUsd: 1, totalTokens: 10 },
+          { model: "m6", costUsd: 1, totalTokens: 10 },
+        ],
+      }),
+      quotaHistory: null,
+    });
+    expect(model?.modelsTitle).toBe("Models · 30d");
+    expect(model?.models.slice(0, 2)).toEqual([
+      { name: "claude-opus-5-5", value: "$30.00 · 9M" },
+      { name: "claude-haiku", value: "Unpriced · 1K" },
+    ]);
+    expect(model?.models).toHaveLength(5);
+    expect(model?.detailLines).toEqual(["Estimated from local logs"]);
   });
 
   it("uses dashes for missing values", () => {

@@ -5,7 +5,7 @@ use super::{
 };
 use crate::commands::is_provider_cache_fresh;
 use codexbar::cost_reporting_period::{CostReportingPeriod, CostTimeZone};
-use codexbar::cost_scanner::{CostSummary, TodayUsage};
+use codexbar::cost_scanner::{CostSummary, ModelTokenCounts, TodayUsage};
 use codexbar::providers::muse::local_usage::{DailyUsage, Report};
 use codexbar::settings::Language;
 use codexbar::spend_contract::LocalHistoryCoverage;
@@ -51,6 +51,7 @@ fn local_usage_summary_serializes_token_cost_timestamp() {
         estimate_note: "estimated".to_string(),
         token_cost_updated_at_ms: 1234,
         incomplete_request_count: None,
+        models: Vec::new(),
     };
 
     let json = serde_json::to_value(summary).expect("serialize summary");
@@ -77,6 +78,7 @@ fn local_usage_cache_identity_uses_the_summary_period_and_timestamp() {
         estimate_note: String::new(),
         token_cost_updated_at_ms: scanned_at.timestamp_millis(),
         incomplete_request_count: None,
+        models: Vec::new(),
     };
 
     assert_eq!(
@@ -171,6 +173,60 @@ fn local_usage_keeps_thirty_day_fixed_while_period_follows_selection() {
 }
 
 #[test]
+fn local_usage_lists_models_for_the_selected_period_by_cost() {
+    let counts = |input_tokens, cached_tokens| ModelTokenCounts {
+        input_tokens,
+        output_tokens: 50,
+        cached_tokens,
+        reasoning_tokens: None,
+    };
+    let thirty = CostSummary {
+        total_cost_usd: 30.0,
+        input_tokens: 3_000,
+        ..CostSummary::default()
+    };
+    let mut month = CostSummary {
+        total_cost_usd: 5.0,
+        input_tokens: 400,
+        ..CostSummary::default()
+    };
+    month.by_model.insert("claude-haiku".to_string(), 1.0);
+    month.by_model.insert("claude-opus".to_string(), 4.0);
+    month
+        .by_model_tokens
+        .insert("claude-haiku".to_string(), counts(150, 0));
+    month
+        .by_model_tokens
+        .insert("claude-opus".to_string(), counts(100, 1_000));
+    month
+        .by_model_tokens
+        .insert("local-model".to_string(), counts(250, 0));
+
+    let summary = local_usage_summary_from_cost_summary(
+        "claude",
+        &thirty,
+        CostReportingPeriod::MonthToDate,
+        Some(&month),
+        None,
+    )
+    .expect("usage is visible");
+    let models: Vec<_> = summary
+        .models
+        .iter()
+        .map(|row| (row.model.as_str(), row.cost_usd, row.total_tokens))
+        .collect();
+    // Claude counts cache tokens separately; an unpriced model sorts last.
+    assert_eq!(
+        models,
+        vec![
+            ("claude-opus", Some(4.0), 1_150),
+            ("claude-haiku", Some(1.0), 200),
+            ("local-model", None, 300),
+        ]
+    );
+}
+
+#[test]
 fn japanese_estimate_note_is_localized() {
     assert_eq!(
         localized_estimate_note("codex", Language::Japanese),
@@ -243,6 +299,7 @@ fn a_scan_that_finishes_after_track_costs_went_off_is_not_cached() {
         estimate_note: "estimated".to_string(),
         token_cost_updated_at_ms: 1234,
         incomplete_request_count: None,
+        models: Vec::new(),
     };
 
     store_scanned_local_usage_summary("track-off-race", Some(summary()), false);

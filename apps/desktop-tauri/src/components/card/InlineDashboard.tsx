@@ -107,6 +107,17 @@ export default function InlineDashboard({ model }: { model: InlineDashboardModel
           ))}
         </div>
       )}
+      {model.models.length > 0 && (
+        <div className="card-dash__windows">
+          <span className="card-dash__caption">{model.modelsTitle}</span>
+          {model.models.map((row) => (
+            <div className="card-dash__window-line" key={row.name}>
+              <span className="card-dash__window-title">{row.name}</span>
+              <span className="card-dash__window-value">{row.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
       {model.detailLines.length > 0 && (
         <div className="card-dash__details">
           {model.detailLines.map((line) => (

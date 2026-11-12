@@ -13,7 +13,8 @@ import {
 } from "../lib/traySizing";
 
 const TRAY_BASE_WIDTH = 310;
-const TRAY_MAX_MEASURE_HEIGHT = 920;
+// Room for the card dashboard's 7-day row and model list; the work area still caps it.
+const TRAY_MAX_MEASURE_HEIGHT = 1200;
 const TRAY_OVERVIEW_MIN_HEIGHT = 200;
 const TRAY_DETAIL_MIN_HEIGHT = 420;
 const TRAY_DENSE_OVERVIEW_HEIGHT = 776;

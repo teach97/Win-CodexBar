@@ -5,7 +5,12 @@ import type {
   ProviderLocalUsageSummary,
   QuotaWindowHistoryPoint,
 } from "../types/bridge";
-import { parseCostPeriod, periodCostLabel, periodTokensLabel } from "./costPeriod";
+import {
+  costPeriodShortLabel,
+  parseCostPeriod,
+  periodCostLabel,
+  periodTokensLabel,
+} from "./costPeriod";
 import { formatCostAmount } from "./cardCost";
 
 type Translate = (key: LocaleKey) => string;
@@ -35,6 +40,11 @@ export interface DashboardWindowRow {
   note: string | null;
 }
 
+export interface DashboardModelRow {
+  name: string;
+  value: string;
+}
+
 export interface InlineDashboardModel {
   kpis: DashboardKpi[];
   points: DashboardPoint[];
@@ -42,6 +52,10 @@ export interface InlineDashboardModel {
   scaleLabel: string | null;
   windows: DashboardWindowRow[];
   detailLines: string[];
+  /** Heading of the model list ("Models · 30d"). */
+  modelsTitle?: string;
+  /** Highest-cost models of the History window. */
+  models: DashboardModelRow[];
 }
 
 export interface InlineDashboardInput {
@@ -61,6 +75,9 @@ export interface InlineDashboardInput {
 const MAX_WINDOWS = 4;
 /** The histogram stays a fixed 30 days, whatever the History window is. */
 const CHART_DAYS = 30;
+/** Models listed under the dashboard, highest cost first. */
+const MODEL_LIMIT = 5;
+const SEVEN_DAYS = "rolling:7";
 
 const compactCount0 = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 0 });
 const compactCount1 = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
@@ -190,6 +207,32 @@ function chartPoints(input: InlineDashboardInput): DashboardPoint[] {
   });
 }
 
+/** Local `YYYY-MM-DD` of `now` minus `days`. */
+function localDayKey(now: Date, days: number): string {
+  const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - days);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
+}
+
+/** 7-day cost and tokens summed from the daily history, or nothing without recent days. */
+function sevenDayKpis(input: InlineDashboardInput, now: Date): DashboardKpi[] {
+  const first = localDayKey(now, 6);
+  const recent = <T extends { date: string }>(points: T[]) =>
+    points.filter((point) => point.date >= first);
+  const costs = recent(input.costHistory).flatMap((point) => (point.value == null ? [] : [point.value]));
+  const tokens = recent(input.tokensHistory).map((point) => point.tokens);
+  if (costs.length === 0 && tokens.length === 0) return [];
+  const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
+  return [
+    {
+      title: periodCostLabel(SEVEN_DAYS, input.t),
+      value: costs.length === 0 ? "—" : formatCostAmount(sum(costs), "USD"),
+      emphasis: false,
+    },
+    { title: periodTokensLabel(SEVEN_DAYS, input.t), value: compactCount(sum(tokens)), emphasis: false },
+  ];
+}
+
 export function inlineDashboardModel(input: InlineDashboardInput): InlineDashboardModel | null {
   const { summary, t } = input;
   if (!summary) return null;
@@ -211,7 +254,14 @@ export function inlineDashboardModel(input: InlineDashboardInput): InlineDashboa
       `${t("IncompleteRequestsLabel")} · ${fill(t("IncompleteRequestsDetail"), String(incompleteCount))}`,
     );
   }
-  if (summary.topModel) {
+  const models = (summary.models ?? []).slice(0, MODEL_LIMIT).map((row) => ({
+    name: shortModelName(row.model),
+    value: `${row.costUsd == null ? t("UsageSpendUnpriced") : formatCostAmount(row.costUsd, "USD")} · ${compactCount(row.totalTokens)}`,
+  }));
+  const modelsTitle =
+    models.length > 0 ? `${t("UsageSpendModels")} · ${costPeriodShortLabel(period, t)}` : undefined;
+  // The model list already names the top model.
+  if (summary.topModel && models.length === 0) {
     detailLines.push(`${t("PanelTopModelPrefix")}: ${shortModelName(summary.topModel)}`);
   }
   if (summary.estimateNote) {
@@ -245,6 +295,8 @@ export function inlineDashboardModel(input: InlineDashboardInput): InlineDashboa
       scaleLabel: null,
       windows: [],
       detailLines,
+      modelsTitle,
+      models,
     };
   }
 
@@ -267,7 +319,10 @@ export function inlineDashboardModel(input: InlineDashboardInput): InlineDashboa
   };
 
   const current = input.quotaHistory?.find((week) => week.offset === 0);
-  const days = historyDays(period, input.now ?? new Date());
+  const now = input.now ?? new Date();
+  const days = historyDays(period, now);
+  // A 7-day History window already shows these totals.
+  const sevenDay = days === 7 ? [] : sevenDayKpis(input, now);
   if (current && days >= 7) {
     const estimated = current.boundariesAreEstimated;
     const titled = (text: string) => (estimated ? fill(t("PanelEstimatedValue"), text) : text);
@@ -290,17 +345,19 @@ export function inlineDashboardModel(input: InlineDashboardInput): InlineDashboa
     // A 7-day history is the window itself: relabel instead of repeating it.
     const kpis =
       days > 7
-        ? [today, windowCost, latestTokens, windowTokens, periodCost, periodTokens]
+        ? [today, windowCost, latestTokens, windowTokens, periodCost, periodTokens, ...sevenDay]
         : [today, windowCost, latestTokens, windowTokens];
-    return { kpis, points, maxValue, scaleLabel, windows, detailLines };
+    return { kpis, points, maxValue, scaleLabel, windows, detailLines, modelsTitle, models };
   }
 
   return {
-    kpis: [today, periodCost, latestTokens, periodTokens],
+    kpis: [today, periodCost, latestTokens, periodTokens, ...sevenDay],
     points,
     maxValue,
     scaleLabel,
     windows,
     detailLines,
+    modelsTitle,
+    models,
   };
 }
