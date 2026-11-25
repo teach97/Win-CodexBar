@@ -575,6 +575,15 @@ impl ProviderId {
         }
     }
 
+    /// A desktop app cookie store the user can pick as a cookie source for
+    /// this provider only. Generic browser scans never include it.
+    pub fn app_cookie_store(&self) -> Option<crate::browser::detection::BrowserType> {
+        match self {
+            ProviderId::Claude => Some(crate::browser::detection::BrowserType::ClaudeDesktop),
+            _ => None,
+        }
+    }
+
     /// Id of the longer pool that blocks this provider's shorter windows once
     /// exhausted (upstream 0.69.0 #4091). See [`super::BlockedWindows`].
     pub fn blocking_quota_window_id(&self) -> Option<&'static str> {
@@ -1626,6 +1635,15 @@ mod tests {
             ProviderId::from_cli_name("code-rabbit"),
             Some(ProviderId::CodeRabbit)
         );
+    }
+
+    #[test]
+    fn only_claude_offers_an_app_cookie_store() {
+        for id in ProviderId::all() {
+            let expected = (*id == ProviderId::Claude)
+                .then_some(crate::browser::detection::BrowserType::ClaudeDesktop);
+            assert_eq!(id.app_cookie_store(), expected, "{id:?}");
+        }
     }
 
     #[test]

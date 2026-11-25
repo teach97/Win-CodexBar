@@ -98,8 +98,12 @@ enum BucketKind {
 }
 
 pub(super) fn parse_usage_snapshot(data: &[u8]) -> Result<UsageSnapshot, ProviderError> {
-    let envelope: QuotaSummaryEnvelope = serde_json::from_slice(data)
-        .map_err(|error| ProviderError::Parse(format!("Antigravity quota summary: {error}")))?;
+    // serde error text quotes string values from the response, so a decode
+    // failure reduces to a fixed category: response content must not reach
+    // user-facing errors or logs.
+    let envelope: QuotaSummaryEnvelope = serde_json::from_slice(data).map_err(|_| {
+        ProviderError::Parse("Antigravity quota summary: unexpected response shape".into())
+    })?;
     let payload = envelope
         .response
         .or(envelope.summary)
@@ -287,33 +291,45 @@ fn most_constrained_named(windows: &[NamedRateWindow], minutes: u32) -> Option<&
         })
 }
 
-fn group_rank(group: &QuotaSummaryGroup) -> u8 {
-    let title = group
-        .display_name
-        .as_deref()
-        .or(group.name.as_deref())
-        .unwrap_or_default()
-        .trim()
-        .to_ascii_lowercase();
-    if title.contains("gemini") {
+fn group_family(group: &QuotaSummaryGroup) -> (Option<&str>, u8) {
+    let title = non_empty(group.display_name.as_deref().or(group.name.as_deref()));
+    let lower = title.unwrap_or_default().to_ascii_lowercase();
+    let rank = if lower.contains("gemini") {
         0
-    } else if title.contains("claude") || title.contains("gpt") {
+    } else if lower.contains("claude") || lower.contains("gpt") {
         1
     } else {
         2
-    }
+    };
+    (title, rank)
 }
 
+fn group_rank(group: &QuotaSummaryGroup) -> u8 {
+    group_family(group).1
+}
+
+/// Upstream `displayTitle(forQuotaGroup:)`. A Gemini group reads "Gemini" only
+/// when its title has no digit, so a versioned group such as "Gemini 4 Argon"
+/// keeps its own name. Claude and GPT groups read "Claude/GPT"; any other group
+/// keeps its trimmed name, or "Quota" when the name is blank.
+///
+/// Unlike upstream, every Gemini-ranked group is titled in the Gemini branch,
+/// so a versioned "Gemini 4 + GPT" keeps its name instead of "Claude/GPT".
 fn group_title(group: &QuotaSummaryGroup) -> String {
-    let title =
-        non_empty(group.display_name.as_deref().or(group.name.as_deref())).unwrap_or("Quota");
-    let lower = title.to_ascii_lowercase();
-    if lower.contains("gemini") {
-        "Gemini".into()
-    } else if lower.contains("claude") || lower.contains("gpt") {
+    let (title, rank) = group_family(group);
+    let title = title.unwrap_or_default();
+    if rank == 0 {
+        if title.chars().any(char::is_numeric) {
+            title.into()
+        } else {
+            "Gemini".into()
+        }
+    } else if rank == 1 {
         "Claude/GPT".into()
+    } else if title.is_empty() {
+        "Quota".into()
     } else {
-        title.to_string()
+        title.into()
     }
 }
 
@@ -556,6 +572,40 @@ mod tests {
             br#"{"groups":[{"displayName":"Gemini","buckets":[{"bucketId":"weekly","displayName":"Weekly"}]}]}"#
         )
         .is_err());
+    }
+
+    #[test]
+    fn parse_failure_is_a_fixed_category_without_response_text() {
+        let error = parse_usage_snapshot(br#"{"groups": "proj-secret-leak"}"#).unwrap_err();
+        let message = error.to_string();
+        assert!(message.contains("unexpected response shape"), "{message}");
+        assert!(!message.contains("proj-secret-leak"), "{message}");
+    }
+
+    #[test]
+    fn cli_report_keeps_a_versioned_gemini_group_name_distinct() {
+        // Upstream #4585: "Gemini 4 Argon" is its own quota, not a second "Gemini".
+        let data = br#"{
+          "status": "SUCCESS",
+          "command": {"name": "usage", "data": {"groups": [
+            {"name": "Gemini Models", "buckets": [
+              {"id": "gemini-weekly", "name": "Weekly Limit Remaining", "window": "weekly", "remaining_fraction": 0.99}
+            ]},
+            {"name": "Gemini 4 Argon", "description": "For paid Pro plans, Argon quota is separate.", "buckets": [
+              {"id": "gemini-argon-wtu-weekly", "name": "Gemini 4 Argon Weekly Limit", "window": "weekly", "remaining_fraction": 0.53, "reset_time": "2026-10-23T10:24:14Z"}
+            ]}
+          ]}}
+        }"#;
+
+        let snapshot = parse_cli_usage_report(data).expect("CLI report");
+
+        assert_eq!(snapshot.secondary_label.as_deref(), Some("Gemini Weekly"));
+        let extra_titles: Vec<&str> = snapshot
+            .extra_rate_windows
+            .iter()
+            .map(|window| window.title.as_str())
+            .collect();
+        assert_eq!(extra_titles, ["Gemini 4 Argon weekly"]);
     }
 
     #[test]

@@ -260,6 +260,12 @@ pub fn revoke_provider_credentials(
     keys.remove(provider_id);
     keys.save().map_err(|e| e.to_string())?;
 
+    if id == ProviderId::Antigravity
+        && let Err(err) = codexbar::providers::antigravity::login::sign_out()
+    {
+        tracing::warn!(%err, "Failed to remove Antigravity OAuth credentials during revoke");
+    }
+
     let mut cookies = ManualCookies::load();
     cookies.remove(provider_id);
     cookies.save().map_err(|e| e.to_string())?;

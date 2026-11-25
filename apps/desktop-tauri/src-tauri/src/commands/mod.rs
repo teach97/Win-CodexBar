@@ -31,6 +31,7 @@ mod updater;
 mod usage_spend;
 
 mod agent_sessions;
+mod antigravity_oauth;
 mod bridge;
 mod browser_import;
 mod claude_accounts;
@@ -58,6 +59,7 @@ mod usage_items;
 mod warning_identity;
 
 pub use agent_sessions::*;
+pub use antigravity_oauth::*;
 pub(crate) use bridge::*;
 pub use browser_import::*;
 pub use claude_accounts::*;

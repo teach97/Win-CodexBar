@@ -155,6 +155,7 @@ fn main() {
 
     let mut initial_state = AppState::new();
     initial_state.proof_config = proof_config;
+    initial_state.claude_account_usage = commands::load_account_usage_cache();
     // Validate the complete proof seed before installing any snapshots, so an
     // invalid multi-provider fixture cannot leave a partial cache behind.
     if let Some(snapshots) = proof_harness::seed_usage_snapshots_from_env(
@@ -301,6 +302,10 @@ fn main() {
             commands::get_provider_gateway_url,
             commands::get_provider_workspace_id,
             commands::get_gemini_cli_signed_in,
+            commands::antigravity_oauth_status,
+            commands::antigravity_oauth_login,
+            commands::antigravity_oauth_cancel_login,
+            commands::antigravity_oauth_logout,
             commands::get_vertexai_status,
             commands::list_jetbrains_detected_ides,
             commands::set_jetbrains_ide_path,

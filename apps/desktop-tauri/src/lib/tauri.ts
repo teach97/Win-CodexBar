@@ -279,8 +279,13 @@ export function removeManualCookie(
   return invoke<CookieInfoBridge[]>("remove_manual_cookie", { providerId });
 }
 
-export function listDetectedBrowsers(): Promise<DetectedBrowserBridge[]> {
-  return invoke<DetectedBrowserBridge[]>("list_detected_browsers");
+/** With `providerId`, also lists a desktop app store only that provider may use. */
+export function listDetectedBrowsers(
+  providerId?: string,
+): Promise<DetectedBrowserBridge[]> {
+  return invoke<DetectedBrowserBridge[]>("list_detected_browsers", {
+    providerId: providerId ?? null,
+  });
 }
 
 export function importBrowserCookies(
@@ -541,6 +546,28 @@ export function getKiroStatus(): Promise<
   import("../types/bridge").KiroStatus
 > {
   return invoke("get_kiro_status");
+}
+
+export function getAntigravityOAuthStatus(): Promise<
+  import("../types/bridge").AntigravityOAuthStatus
+> {
+  return invoke("antigravity_oauth_status");
+}
+
+export function antigravityOAuthLogin(): Promise<
+  import("../types/bridge").AntigravityOAuthStatus
+> {
+  return invoke("antigravity_oauth_login");
+}
+
+export function antigravityOAuthCancelLogin(): Promise<void> {
+  return invoke<void>("antigravity_oauth_cancel_login");
+}
+
+export function antigravityOAuthLogout(): Promise<
+  import("../types/bridge").AntigravityOAuthStatus
+> {
+  return invoke("antigravity_oauth_logout");
 }
 
 // ── Phase 7 — global shortcut capture + notification preview ──────────

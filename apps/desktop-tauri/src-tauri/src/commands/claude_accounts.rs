@@ -354,6 +354,7 @@ pub async fn claude_account_add(app: tauri::AppHandle, id: Option<String>) -> Re
         .await
         .map_err(|e| e.to_string())?
         .map_err(|e| e.to_string())?;
+    let login_id = login.id().ok();
     let _credentials = accounts::CREDENTIAL_OPERATION.lock().await;
     AccountManager::new()
         .and_then(|m| match id.as_deref() {
@@ -361,6 +362,9 @@ pub async fn claude_account_add(app: tauri::AppHandle, id: Option<String>) -> Re
             None => m.import(login),
         })
         .map_err(|e| e.to_string())?;
+    if let Some(account_id) = id.as_deref().or(login_id.as_deref()) {
+        codexbar::providers::claude::clear_account_usage_gate(account_id);
+    }
     crate::auto_resume::clear(&app, ProviderId::Claude);
     drop(_credentials);
     refresh_after_claude_change(app).await.map(|_| ())

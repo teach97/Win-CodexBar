@@ -6,6 +6,7 @@ mod auto_precision;
 pub mod claude_swap;
 mod cli_reset;
 mod cli_screen;
+mod desktop_cookies;
 mod oauth;
 pub mod quota_history;
 mod reset_credits;
@@ -13,6 +14,12 @@ pub mod reset_observations;
 mod scoped_weekly;
 mod trust_dialog;
 mod web_api;
+
+/// Clear any active OAuth usage rate-limit block or cached usage payload for
+/// `account_id`, used after an explicit reconnect/re-authentication.
+pub fn clear_account_usage_gate(account_id: &str) {
+    oauth::clear_account_usage_gate(account_id);
+}
 
 use async_trait::async_trait;
 use chrono::Utc;
@@ -1009,6 +1016,19 @@ impl ClaudeProvider {
         ctx: &FetchContext,
     ) -> Result<ProviderFetchResult, ProviderError> {
         tracing::debug!("Attempting Web API fetch for Claude");
+
+        // Selection requires the Automatic cookie source, where the header is
+        // the stored cookie (usually an earlier browser import). The desktop
+        // session replaces it so a desktop account switch is followed on the
+        // next refresh; the Manual source never reaches this branch.
+        if desktop_cookies::selected(&crate::settings::Settings::load()) {
+            tracing::debug!("Using the Claude desktop app cookie store");
+            let cookie_header = desktop_cookies::session_cookie_header()?;
+            return self
+                .web_fetcher
+                .fetch_with_cookie_header(&cookie_header)
+                .await;
+        }
 
         // Check for manual cookie header first
         if let Some(ref cookie_header) = ctx.manual_cookie_header {

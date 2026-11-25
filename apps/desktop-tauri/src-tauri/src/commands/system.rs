@@ -297,6 +297,12 @@ pub async fn trigger_provider_login(
         return run_cli_provider_login(&app, &provider_id, "kiro", 120).await;
     }
 
+    if id == ProviderId::Antigravity {
+        return crate::commands::antigravity_oauth::antigravity_oauth_login(app)
+            .await
+            .map(|_| ());
+    }
+
     // For other providers, surface the dashboard URL as the login flow
     // is not yet wired through the Tauri shell.
     if let Some(url) = dashboard_url_for_provider(&provider_id) {
