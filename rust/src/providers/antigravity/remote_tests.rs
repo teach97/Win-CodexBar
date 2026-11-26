@@ -925,3 +925,29 @@ async fn auto_oauth_failure_without_offline_history_surfaces_oauth_error() {
     .unwrap_err();
     assert!(matches!(error, ProviderError::OAuthExpired(_)));
 }
+
+#[test]
+fn save_credentials_creates_missing_parent_directories_and_roundtrips() {
+    let home = tempfile::tempdir().unwrap();
+    let path = credentials_path(home.path());
+    assert!(!path.parent().unwrap().exists());
+
+    let credentials = OAuthCredentials {
+        access_token: Some("access-token-1".to_string()),
+        refresh_token: Some("refresh-token-1".to_string()),
+        expiry_date: Some(4_102_444_800_000.0),
+        email: Some("user@example.com".to_string()),
+        client_id: Some("client-id".to_string()),
+        client_secret: Some("client-secret".to_string()),
+        ..OAuthCredentials::default()
+    };
+    save_credentials(&path, &credentials).unwrap();
+
+    let loaded = resolve_stored_credentials(home.path())
+        .unwrap()
+        .expect("saved credentials should be readable");
+    assert!(
+        loaded == credentials,
+        "saved credentials should roundtrip cleanly"
+    );
+}

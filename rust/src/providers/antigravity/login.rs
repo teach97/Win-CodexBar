@@ -117,7 +117,20 @@ where
 
     open_browser(&auth_url)?;
 
-    let callback = wait_for_callback(listener, &state, generation).await?;
+    let (callback, mut callback_stream) = wait_for_callback(listener, &state, generation).await?;
+    let result = complete_callback_login(&callback, &state, &redirect_url, &oauth_client).await;
+    if let Some(stream) = callback_stream.as_mut() {
+        write_response_and_close(stream, &callback_http_response(result.is_ok())).await;
+    }
+    result
+}
+
+async fn complete_callback_login(
+    callback: &OAuthCallback,
+    expected_state: &str,
+    redirect_url: &str,
+    oauth_client: &OAuthClient,
+) -> Result<Option<String>, String> {
     if let Some(error) = callback
         .error
         .as_deref()
@@ -130,7 +143,7 @@ where
         return Err(format!("Google sign-in failed: {error}"));
     }
 
-    if callback.returned_state.as_deref() != Some(state.as_str()) {
+    if callback.returned_state.as_deref() != Some(expected_state) {
         return Err("Google login state mismatch.".to_string());
     }
     let Some(code) = callback
@@ -146,7 +159,7 @@ where
         .timeout(HTTP_TIMEOUT)
         .build()
         .map_err(|err| format!("Could not initialize HTTP client: {err}"))?;
-    let tokens = exchange_code_for_tokens(&http, code, &redirect_url, &oauth_client).await?;
+    let tokens = exchange_code_for_tokens(&http, code, redirect_url, oauth_client).await?;
     let email = fetch_user_email(&http, &tokens.access_token).await;
 
     let expiry_date = tokens
@@ -159,8 +172,8 @@ where
         id_token: tokens.id_token,
         email: email.clone(),
         project_id: None,
-        client_id: Some(oauth_client.client_id),
-        client_secret: Some(oauth_client.client_secret),
+        client_id: Some(oauth_client.client_id.clone()),
+        client_secret: Some(oauth_client.client_secret.clone()),
     };
     let resolved_email = credential_email(&credentials).or(email);
     if credentials.email.is_none() {
@@ -287,7 +300,7 @@ async fn wait_for_callback(
     listener: TcpListener,
     expected_state: &str,
     generation: u64,
-) -> Result<OAuthCallback, String> {
+) -> Result<(OAuthCallback, Option<TcpStream>), String> {
     let deadline = tokio::time::sleep(LOGIN_TIMEOUT);
     tokio::pin!(deadline);
 
@@ -306,10 +319,10 @@ async fn wait_for_callback(
                 return Err("Antigravity Google sign-in cancelled.".to_string());
             }
             accepted = listener.accept() => {
-                let (mut stream, _) = accepted
+                let (stream, _) = accepted
                     .map_err(|err| format!("OAuth callback listener failed: {err}"))?;
-                if let Some(callback) = handle_connection(&mut stream, expected_state).await {
-                    return Ok(callback);
+                if let Some(pending) = handle_connection(stream, expected_state).await {
+                    return Ok(pending);
                 }
             }
         }
@@ -321,7 +334,10 @@ async fn write_response_and_close(stream: &mut TcpStream, bytes: &[u8]) {
     let _shutdown = stream.shutdown().await;
 }
 
-async fn handle_connection(stream: &mut TcpStream, expected_state: &str) -> Option<OAuthCallback> {
+async fn handle_connection(
+    mut stream: TcpStream,
+    expected_state: &str,
+) -> Option<(OAuthCallback, Option<TcpStream>)> {
     let mut buf = Vec::with_capacity(2048);
     let mut chunk = [0_u8; 1024];
     loop {
@@ -337,24 +353,27 @@ async fn handle_connection(stream: &mut TcpStream, expected_state: &str) -> Opti
         }
     }
 
+    if buf.is_empty() {
+        return None;
+    }
+
     match parse_callback_request(&buf, expected_state) {
         ParsedRequest::IgnorePath => {
-            write_response_and_close(stream, not_found_http_response()).await;
+            write_response_and_close(&mut stream, not_found_http_response()).await;
             None
         }
         ParsedRequest::BadRequest(msg) => {
-            write_response_and_close(stream, &callback_http_response(false)).await;
-            Some(OAuthCallback {
-                code: None,
-                returned_state: None,
-                error: Some(msg.to_string()),
-            })
+            write_response_and_close(&mut stream, &callback_http_response(false)).await;
+            Some((
+                OAuthCallback {
+                    code: None,
+                    returned_state: None,
+                    error: Some(msg.to_string()),
+                },
+                None,
+            ))
         }
-        ParsedRequest::Callback(cb) => {
-            let success = cb.error.is_none() && cb.code.as_deref().is_some_and(|c| !c.is_empty());
-            write_response_and_close(stream, &callback_http_response(success)).await;
-            Some(cb)
-        }
+        ParsedRequest::Callback(cb) => Some((cb, Some(stream))),
     }
 }
 
@@ -498,7 +517,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn loopback_server_ignores_favicon_and_captures_callback() {
+    async fn loopback_server_ignores_favicon_and_preconnect_and_defers_success_response() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = listener.local_addr().unwrap().port();
         let generation = LOGIN_GENERATION.load(Ordering::SeqCst);
@@ -506,6 +525,10 @@ mod tests {
             tokio::spawn(
                 async move { wait_for_callback(listener, "expected-state", generation).await },
             );
+
+        // Speculative empty connection (e.g. browser preconnect) must be ignored.
+        let mut preconnect = TcpStream::connect(("127.0.0.1", port)).await.unwrap();
+        preconnect.shutdown().await.unwrap();
 
         let mut fav = TcpStream::connect(("127.0.0.1", port)).await.unwrap();
         fav.write_all(b"GET /favicon.ico HTTP/1.1\r\nHost: localhost\r\n\r\n")
@@ -519,14 +542,44 @@ mod tests {
         cb.write_all(b"GET /callback?code=auth-code-1&state=expected-state HTTP/1.1\r\nHost: localhost\r\n\r\n")
             .await
             .unwrap();
+
+        let (received, mut stream) = server.await.unwrap().unwrap();
+        assert_eq!(received.code.as_deref(), Some("auth-code-1"));
+        assert_eq!(received.returned_state.as_deref(), Some("expected-state"));
+        assert_eq!(received.error, None);
+
+        let mut stream = stream.take().expect("callback response stream");
+        write_response_and_close(&mut stream, &callback_http_response(true)).await;
+
         let mut cb_resp = String::new();
         cb.read_to_string(&mut cb_resp).await.unwrap();
         assert!(cb_resp.starts_with("HTTP/1.1 200 OK"));
         assert!(cb_resp.contains("Login Successful"));
+    }
 
-        let received = server.await.unwrap().unwrap();
-        assert_eq!(received.code.as_deref(), Some("auth-code-1"));
-        assert_eq!(received.returned_state.as_deref(), Some("expected-state"));
-        assert_eq!(received.error, None);
+    #[tokio::test]
+    async fn callback_error_response_reports_login_failed_instead_of_success() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let generation = LOGIN_GENERATION.load(Ordering::SeqCst);
+        let server =
+            tokio::spawn(
+                async move { wait_for_callback(listener, "expected-state", generation).await },
+            );
+
+        let mut cb = TcpStream::connect(("127.0.0.1", port)).await.unwrap();
+        cb.write_all(b"GET /callback?code=auth-code-2&state=expected-state HTTP/1.1\r\nHost: localhost\r\n\r\n")
+            .await
+            .unwrap();
+
+        let (_received, mut stream) = server.await.unwrap().unwrap();
+        let mut stream = stream.take().expect("callback response stream");
+        write_response_and_close(&mut stream, &callback_http_response(false)).await;
+
+        let mut cb_resp = String::new();
+        cb.read_to_string(&mut cb_resp).await.unwrap();
+        assert!(cb_resp.starts_with("HTTP/1.1 400 Bad Request"));
+        assert!(cb_resp.contains("Login Failed"));
+        assert!(!cb_resp.contains("Login Successful"));
     }
 }

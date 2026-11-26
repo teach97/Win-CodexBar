@@ -26,7 +26,12 @@ pub async fn antigravity_oauth_login(
     let _guard = LOGIN_MUTEX
         .try_lock()
         .map_err(|_| "An Antigravity Google sign-in is already in progress.")?;
-    login::login_with_browser(crate::commands::system::open_url_in_browser).await?;
+    if let Err(err) = login::login_with_browser(crate::commands::system::open_url_in_browser).await
+    {
+        tracing::warn!(%err, "Antigravity Google OAuth sign-in failed");
+        return Err(err);
+    }
+    tracing::info!("Antigravity Google OAuth sign-in succeeded");
 
     crate::auto_resume::clear(&app, ProviderId::Antigravity);
     {

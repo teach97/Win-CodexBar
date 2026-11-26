@@ -948,6 +948,12 @@ impl<T: RemoteTransport> RemoteFetcher<T> {
 }
 
 pub(super) fn save_credentials(path: &Path, credentials: &OAuthCredentials) -> std::io::Result<()> {
+    if let Some(parent) = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        std::fs::create_dir_all(parent)?;
+    }
     let contents = serde_json::to_string_pretty(credentials).map_err(std::io::Error::other)?;
     crate::secure_file::write_string(path, &contents)
 }
