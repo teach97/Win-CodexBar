@@ -269,6 +269,18 @@ pub(crate) fn build_fetch_context(
                 (SourceMode::Web, stored_cookie.clone(), false)
             }
             _ if active_token_env.is_some() => (SourceMode::OAuth, None, false),
+            // Providers with no Web source (e.g. Antigravity, Codex) never fetch via
+            // browser cookies; default "manual" or "off" cookie settings must keep the
+            // configured usage source (Auto/OAuth/Cli) instead of forcing Cli.
+            _ if !provider.available_sources().contains(&SourceMode::Web) => {
+                let available = provider.available_sources();
+                let source_mode = if available.contains(&usage_source) {
+                    usage_source
+                } else {
+                    SourceMode::Auto
+                };
+                (source_mode, None, false)
+            }
             // Opt-in web providers keep their default credential lane
             // unless the usage source is explicitly Web; a stored or
             // browser cookie must not turn Auto into Web.

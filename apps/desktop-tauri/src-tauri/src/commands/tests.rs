@@ -882,6 +882,34 @@ fn fetch_context_codex_manual_cookie_keeps_explicit_supported_source() {
 }
 
 #[test]
+fn fetch_context_antigravity_preserves_auto_and_oauth_despite_cookie_source() {
+    for cookie_source in ["manual", "off", "auto"] {
+        for (usage_source, expected) in [
+            ("auto", SourceMode::Auto),
+            ("oauth", SourceMode::OAuth),
+            ("cli", SourceMode::Cli),
+        ] {
+            let mut settings = Settings::default();
+            settings.set_cookie_source(ProviderId::Antigravity, cookie_source);
+            settings.set_usage_source(ProviderId::Antigravity, usage_source);
+            let ctx = super::build_fetch_context(
+                ProviderId::Antigravity,
+                &settings,
+                &ManualCookies::default(),
+                &ApiKeys::default(),
+                &HashMap::new(),
+            );
+            assert_eq!(
+                ctx.source_mode, expected,
+                "cookie_source={cookie_source}, usage_source={usage_source}"
+            );
+            assert!(ctx.manual_cookie_header.is_none());
+            assert!(!ctx.manual_cookie_missing);
+        }
+    }
+}
+
+#[test]
 fn fetch_context_claude_uses_oauth_without_manual_cookie() {
     let settings = Settings::default();
     let cookies = ManualCookies::default();
